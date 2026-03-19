@@ -1,6 +1,7 @@
 package web
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/MathiasDPX/archivetube/internal/archive"
 	"github.com/MathiasDPX/archivetube/internal/config"
 	"github.com/MathiasDPX/archivetube/internal/domain"
+	"github.com/MathiasDPX/archivetube/internal/queue"
 	"github.com/MathiasDPX/archivetube/internal/store"
 )
 
@@ -17,6 +19,7 @@ type handlers struct {
 	config  *config.Config
 	store   *store.Store
 	archive *archive.Service
+	queue   *queue.Queue
 	tmpl    *Templates
 }
 
@@ -36,8 +39,8 @@ type VideoData struct {
 }
 
 type ArchiveData struct {
-	Error   string
-	Success bool
+	Error string
+	Jobs  []queue.Job
 }
 
 type CreatorsData struct {
@@ -181,7 +184,7 @@ func (h *handlers) handleDownload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) handleArchivePage(w http.ResponseWriter, r *http.Request) {
-	h.render(w, "archive.tmpl", ArchiveData{})
+	h.render(w, "archive.tmpl", ArchiveData{Jobs: h.queue.Jobs()})
 }
 
 func (h *handlers) handleArchiveSubmit(w http.ResponseWriter, r *http.Request) {
@@ -192,17 +195,25 @@ func (h *handlers) handleArchiveSubmit(w http.ResponseWriter, r *http.Request) {
 
 	url := r.FormValue("url")
 	if url == "" {
-		h.render(w, "archive.tmpl", ArchiveData{Error: "Please provide a URL."})
+		h.render(w, "archive.tmpl", ArchiveData{
+			Error: "Please provide a URL.",
+			Jobs:  h.queue.Jobs(),
+		})
 		return
 	}
 
-	if err := h.archive.ArchiveURL(r.Context(), url); err != nil {
-		log.Printf("archive error: %v", err)
-		h.render(w, "archive.tmpl", ArchiveData{Error: err.Error()})
-		return
-	}
+	h.queue.Enqueue(url)
+	http.Redirect(w, r, "/archive", http.StatusSeeOther)
+}
 
-	h.render(w, "archive.tmpl", ArchiveData{Success: true})
+func (h *handlers) handleQueueStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(h.queue.Jobs())
+}
+
+func (h *handlers) handleQueueClear(w http.ResponseWriter, r *http.Request) {
+	h.queue.ClearFinished()
+	http.Redirect(w, r, "/archive", http.StatusSeeOther)
 }
 
 func (h *handlers) render(w http.ResponseWriter, name string, data any) {

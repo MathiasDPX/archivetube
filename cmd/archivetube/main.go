@@ -10,6 +10,7 @@ import (
 
 	"github.com/MathiasDPX/archivetube/internal/archive"
 	"github.com/MathiasDPX/archivetube/internal/config"
+	"github.com/MathiasDPX/archivetube/internal/queue"
 	"github.com/MathiasDPX/archivetube/internal/store"
 	"github.com/MathiasDPX/archivetube/internal/web"
 )
@@ -29,6 +30,7 @@ func main() {
 	defer st.Close()
 
 	archiveSvc := archive.New(cfg.YtDlpPath, cfg.DataDir, st)
+	q := queue.New(archiveSvc.ArchiveURL)
 
 	webPaths := web.DefaultWebPaths()
 	tmpl, err := web.NewTemplates(webPaths.TemplateDir)
@@ -36,7 +38,7 @@ func main() {
 		log.Fatalf("loading templates: %v", err)
 	}
 
-	router := web.NewRouter(cfg, st, archiveSvc, tmpl, webPaths.StaticDir)
+	router := web.NewRouter(cfg, st, archiveSvc, q, tmpl, webPaths.StaticDir)
 
 	srv := &http.Server{
 		Addr:              cfg.ListenAddr,
