@@ -1,0 +1,21 @@
+{{define "title"}}Archive a video - ArchiveTube{{end}}
+{{define "content"}}
+<div class="page-narrow">
+    <h1 class="page-heading">Archive a video</h1>
+    <p class="page-sub">Paste a YouTube (or compatible) URL below. The video, metadata, subtitles and thumbnail will be saved locally.</p>
+
+    {{if .Error}}
+    <div class="alert alert-error">{{.Error}}</div>
+    {{end}}
+    {{if .Success}}
+    <div class="alert alert-success">Video archived successfully.</div>
+    {{end}}
+
+    <form method="post" action="/archive" class="archive-form">
+        <label for="url" class="form-label">Video URL</label>
+        <input type="url" id="url" name="url" placeholder="https://www.youtube.com/watch?v=..." class="form-input" required autofocus>
+        <button type="submit" class="form-submit">Start archiving</button>
+        <p class="form-hint">This may take a while depending on the video length.</p>
+    </form>
+</div>
+{{end}}
