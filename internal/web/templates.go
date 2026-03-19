@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -21,6 +22,7 @@ var funcMap = template.FuncMap{
 	"fmtSize":     fmtSize,
 	"ftoi":        func(f float64) int { return int(f) },
 	"linkify":     linkify,
+	"webPath":     webPath,
 }
 
 func fmtDuration(seconds int) string {
@@ -70,6 +72,15 @@ func linkify(text string) template.HTML {
 		return `<a href="` + u + `" target="_blank" rel="noopener">` + u + `</a>`
 	})
 	return template.HTML(result)
+}
+
+func webPath(p string) string {
+	p = strings.TrimSpace(p)
+	if p == "" {
+		return ""
+	}
+	p = filepath.ToSlash(p)
+	return strings.TrimLeft(p, "/")
 }
 
 // Templates holds pre-parsed page templates.

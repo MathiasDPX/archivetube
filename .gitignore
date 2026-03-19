@@ -11,6 +11,7 @@ archivetube
 
 # Output
 *.out
+data/
 
 # Go workspace
 go.work
