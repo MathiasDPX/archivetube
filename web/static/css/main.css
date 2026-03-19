@@ -300,6 +300,71 @@ a { color: inherit; text-decoration: none; }
     border: 1px solid rgba(50, 205, 50, 0.2);
 }
 
+/* === Queue === */
+.queue-section { margin-top: 36px; }
+.queue-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+.queue-clear-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    padding: 4px 12px;
+    border-radius: 14px;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: background 0.15s, color 0.15s;
+}
+.queue-clear-btn:hover { background: var(--bg-hover); color: var(--text); }
+.queue-list { display: flex; flex-direction: column; gap: 2px; }
+.queue-empty { color: var(--text-muted); font-size: 0.85rem; }
+.queue-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-raised);
+    flex-wrap: wrap;
+}
+.queue-status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.queue-pending .queue-status-dot { background: var(--text-muted); }
+.queue-processing .queue-status-dot { background: var(--blue); animation: pulse 1.2s infinite; }
+.queue-done .queue-status-dot { background: #6bff6b; }
+.queue-error .queue-status-dot { background: #ff6b6b; }
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+.queue-url {
+    flex: 1;
+    font-size: 0.85rem;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+.queue-status-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+.queue-error {
+    width: 100%;
+    font-size: 0.8rem;
+    color: #ff6b6b;
+    padding-left: 18px;
+}
+
 /* === Watch / player page === */
 .watch-page {
     max-width: 100%;

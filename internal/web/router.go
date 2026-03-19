@@ -6,17 +6,19 @@ import (
 
 	"github.com/MathiasDPX/archivetube/internal/archive"
 	"github.com/MathiasDPX/archivetube/internal/config"
+	"github.com/MathiasDPX/archivetube/internal/queue"
 	"github.com/MathiasDPX/archivetube/internal/store"
 )
 
 // NewRouter sets up the HTTP routes and returns the top-level handler.
-func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service, tmpl *Templates, staticDir string) http.Handler {
+func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service, q *queue.Queue, tmpl *Templates, staticDir string) http.Handler {
 	mux := http.NewServeMux()
 
 	h := &handlers{
 		config:  cfg,
 		store:   st,
 		archive: archiveSvc,
+		queue:   q,
 		tmpl:    tmpl,
 	}
 
@@ -34,6 +36,8 @@ func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service,
 	mux.HandleFunc("GET /download/{id}", h.handleDownload)
 	mux.HandleFunc("GET /archive", h.handleArchivePage)
 	mux.HandleFunc("POST /archive", h.handleArchiveSubmit)
+	mux.HandleFunc("GET /api/queue", h.handleQueueStatus)
+	mux.HandleFunc("POST /archive/clear", h.handleQueueClear)
 
 	return logRequests(mux)
 }

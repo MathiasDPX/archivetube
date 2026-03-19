@@ -2,20 +2,42 @@
 {{define "content"}}
 <div class="page-narrow">
     <h1 class="page-heading">Archive a video</h1>
-    <p class="page-sub">Paste a YouTube (or compatible) URL below. The video, metadata, subtitles and thumbnail will be saved locally.</p>
+    <p class="page-sub">Paste a YouTube (or compatible) URL below. The video will be added to the queue and downloaded in the background.</p>
 
     {{if .Error}}
     <div class="alert alert-error">{{.Error}}</div>
-    {{end}}
-    {{if .Success}}
-    <div class="alert alert-success">Video archived successfully.</div>
     {{end}}
 
     <form method="post" action="/archive" class="archive-form">
         <label for="url" class="form-label">Video URL</label>
         <input type="url" id="url" name="url" placeholder="https://www.youtube.com/watch?v=..." class="form-input" required autofocus>
-        <button type="submit" class="form-submit">Start archiving</button>
-        <p class="form-hint">This may take a while depending on the video length.</p>
+        <button type="submit" class="form-submit">Add to queue</button>
     </form>
+
+    <div class="queue-section">
+        <div class="queue-header">
+            <h2 class="section-label">Queue</h2>
+            <form method="post" action="/archive/clear" id="clear-form" style="display:none;">
+                <button type="submit" class="queue-clear-btn">Clear finished</button>
+            </form>
+        </div>
+        <div id="queue-list" class="queue-list">
+            {{if .Jobs}}
+            {{range .Jobs}}
+            <div class="queue-item queue-{{.Status}}">
+                <span class="queue-status-dot"></span>
+                <span class="queue-url">{{.URL}}</span>
+                <span class="queue-status-label">{{.Status}}</span>
+                {{if .Error}}<span class="queue-error">{{.Error}}</span>{{end}}
+            </div>
+            {{end}}
+            {{else}}
+            <p class="queue-empty">No jobs in the queue.</p>
+            {{end}}
+        </div>
+    </div>
 </div>
+{{end}}
+{{define "scripts"}}
+<script src="/static/js/queue.js"></script>
 {{end}}
