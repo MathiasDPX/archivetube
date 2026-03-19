@@ -453,6 +453,22 @@ a { color: inherit; text-decoration: none; }
     height: 72px;
 }
 
+/* === Creator banner === */
+.creator-banner {
+    width: 100%;
+    aspect-ratio: 6.2 / 1;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--bg-raised);
+    margin-bottom: 16px;
+}
+.creator-banner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
 /* === Creators === */
 .creators-list {
     display: flex;

@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS channels (
     url                TEXT    NOT NULL DEFAULT '',
     description        TEXT    NOT NULL DEFAULT '',
     thumbnail_path     TEXT    NOT NULL DEFAULT '',
+    banner_path        TEXT    NOT NULL DEFAULT '',
     created_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

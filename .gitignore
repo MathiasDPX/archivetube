@@ -1,5 +1,5 @@
 # Binaries
-archivetube
+/archivetube
 *.exe
 *.exe~
 *.dll
