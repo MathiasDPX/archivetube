@@ -1,0 +1,112 @@
+package web
+
+import (
+	"fmt"
+	"html"
+	"html/template"
+	"net/http"
+	"path/filepath"
+	"regexp"
+	"time"
+)
+
+var funcMap = template.FuncMap{
+	"fmtDuration": fmtDuration,
+	"fmtDate":     fmtDate,
+	"fmtDatePtr":  fmtDatePtr,
+	"add":         func(a, b int) int { return a + b },
+	"sub":         func(a, b int) int { return a - b },
+	"mul":         func(a, b int) int { return a * b },
+	"hasPages":    func(total, perPage int) bool { return total > perPage },
+	"fmtSize":     fmtSize,
+	"ftoi":        func(f float64) int { return int(f) },
+	"linkify":     linkify,
+}
+
+func fmtDuration(seconds int) string {
+	h := seconds / 3600
+	m := (seconds % 3600) / 60
+	s := seconds % 60
+	if h > 0 {
+		return fmt.Sprintf("%d:%02d:%02d", h, m, s)
+	}
+	return fmt.Sprintf("%d:%02d", m, s)
+}
+
+func fmtDate(t time.Time) string {
+	return t.Format("Jan 2, 2006")
+}
+
+func fmtDatePtr(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.Format("Jan 2, 2006")
+}
+
+func fmtSize(bytes int64) string {
+	const (
+		kb = 1024
+		mb = 1024 * kb
+		gb = 1024 * mb
+	)
+	switch {
+	case bytes >= gb:
+		return fmt.Sprintf("%.1f GB", float64(bytes)/float64(gb))
+	case bytes >= mb:
+		return fmt.Sprintf("%.0f MB", float64(bytes)/float64(mb))
+	case bytes >= kb:
+		return fmt.Sprintf("%.0f KB", float64(bytes)/float64(kb))
+	default:
+		return fmt.Sprintf("%d B", bytes)
+	}
+}
+
+var urlRe = regexp.MustCompile(`(https?://[^\s<>"'` + "`" + `\x00-\x1f]+)`)
+
+func linkify(text string) template.HTML {
+	escaped := html.EscapeString(text)
+	result := urlRe.ReplaceAllStringFunc(escaped, func(u string) string {
+		return `<a href="` + u + `" target="_blank" rel="noopener">` + u + `</a>`
+	})
+	return template.HTML(result)
+}
+
+// Templates holds pre-parsed page templates.
+type Templates struct {
+	templates map[string]*template.Template
+}
+
+// NewTemplates parses all page templates from templateDir, each combined with base.tmpl.
+func NewTemplates(templateDir string) (*Templates, error) {
+	basePath := filepath.Join(templateDir, "base.tmpl")
+
+	pages, err := filepath.Glob(filepath.Join(templateDir, "*.tmpl"))
+	if err != nil {
+		return nil, fmt.Errorf("globbing templates: %w", err)
+	}
+
+	t := &Templates{templates: make(map[string]*template.Template)}
+	for _, pagePath := range pages {
+		name := filepath.Base(pagePath)
+		if name == "base.tmpl" {
+			continue
+		}
+		tmpl, err := template.New(name).Funcs(funcMap).ParseFiles(basePath, pagePath)
+		if err != nil {
+			return nil, fmt.Errorf("parsing template %s: %w", name, err)
+		}
+		t.templates[name] = tmpl
+	}
+	return t, nil
+}
+
+// Render executes the named page template, which should invoke the "base" template.
+func (t *Templates) Render(w http.ResponseWriter, name string, data any) error {
+	tmpl, ok := t.templates[name]
+	if !ok {
+		return fmt.Errorf("template %q not found", name)
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	return tmpl.ExecuteTemplate(w, "base", data)
+}

@@ -1,0 +1,44 @@
+{{define "title"}}ArchiveTube{{end}}
+{{define "content"}}
+<div class="page-shell">
+    {{if .Videos}}
+    <div class="video-grid">
+        {{range .Videos}}
+        <div class="video-card">
+            <a href="/videos/{{.YoutubeVideoID}}" class="thumb-link">
+                <div class="thumb">
+                    {{if .ThumbnailRelPath}}
+                    <img src="/data/{{.ThumbnailRelPath}}" alt="" loading="lazy">
+                    {{end}}
+                    <span class="badge-duration">{{fmtDuration .DurationSeconds}}</span>
+                </div>
+            </a>
+            <div class="card-body">
+                <a href="/videos/{{.YoutubeVideoID}}" class="card-title">{{.Title}}</a>
+                <a href="/creators/{{.ChannelYoutubeID}}" class="card-channel">{{.ChannelName}}</a>
+                <span class="card-meta">Archived {{fmtDate .ArchivedAt}}</span>
+            </div>
+        </div>
+        {{end}}
+    </div>
+
+    {{if hasPages .Total .PerPage}}
+    <div class="pagination">
+        {{if gt .Page 1}}
+        <a href="/?q={{.Query}}&page={{sub .Page 1}}" class="pg-btn">← Previous</a>
+        {{end}}
+        <span class="pg-info">Page {{.Page}}</span>
+        {{if lt (mul .Page .PerPage) .Total}}
+        <a href="/?q={{.Query}}&page={{add .Page 1}}" class="pg-btn">Next →</a>
+        {{end}}
+    </div>
+    {{end}}
+
+    {{else}}
+    <div class="empty">
+        <p>No videos found.</p>
+        <a href="/archive" class="link-subtle">Archive your first video →</a>
+    </div>
+    {{end}}
+</div>
+{{end}}

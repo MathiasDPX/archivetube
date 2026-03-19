@@ -1,0 +1,22 @@
+{{define "title"}}Creators - ArchiveTube{{end}}
+{{define "content"}}
+<div class="page-shell">
+    <h1 class="page-heading">Creators</h1>
+    {{if .Channels}}
+    <div class="creators-list">
+        {{range .Channels}}
+        <a href="/creators/{{.YoutubeChannelID}}" class="creator-row">
+            {{if .ThumbnailPath}}<img src="/data/{{.ThumbnailPath}}" alt="" class="avatar">{{end}}
+            <span class="creator-name">{{.Name}}</span>
+            {{if .Handle}}<span class="creator-handle">{{.Handle}}</span>{{end}}
+        </a>
+        {{end}}
+    </div>
+    {{else}}
+    <div class="empty">
+        <p>No creators yet.</p>
+        <a href="/archive" class="link-subtle">Archive a video to see its creator here →</a>
+    </div>
+    {{end}}
+</div>
+{{end}}
