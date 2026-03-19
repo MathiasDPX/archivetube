@@ -3,9 +3,9 @@
 <div class="watch-page">
     <div class="player-wrap">
         <video id="video-player" controls preload="metadata">
-            <source src="/data/{{.Video.VideoRelPath}}" type="video/mp4">
+            <source src="/data/{{webPath .Video.VideoRelPath}}" type="video/mp4">
             {{range .Subtitles}}
-            <track kind="subtitles" src="/data/{{.RelPath}}" srclang="{{.LanguageCode}}" label="{{if .LanguageName}}{{.LanguageName}}{{else}}{{.LanguageCode}}{{end}}">
+            <track kind="subtitles" src="/data/{{webPath .RelPath}}" srclang="{{.LanguageCode}}" label="{{if .LanguageName}}{{.LanguageName}}{{else}}{{.LanguageCode}}{{end}}">
             {{end}}
         </video>
     </div>
@@ -15,7 +15,7 @@
 
         <div class="watch-bar">
             <a href="/creators/{{.Channel.YoutubeChannelID}}" class="watch-channel">
-                {{if .Channel.ThumbnailPath}}<img src="/data/{{.Channel.ThumbnailPath}}" alt="" class="avatar">{{end}}
+                {{if .Channel.ThumbnailPath}}<img src="/data/{{webPath .Channel.ThumbnailPath}}" alt="" class="avatar">{{end}}
                 <span>{{.Channel.Name}}</span>
             </a>
             <div class="watch-actions">

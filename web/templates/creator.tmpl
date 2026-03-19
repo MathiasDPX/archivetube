@@ -3,7 +3,7 @@
 <div class="page-shell">
     <div class="creator-header">
         <div class="creator-profile">
-            {{if .Channel.ThumbnailPath}}<img src="/data/{{.Channel.ThumbnailPath}}" alt="" class="avatar avatar-lg">{{end}}
+            {{if .Channel.ThumbnailPath}}<img src="/data/{{webPath .Channel.ThumbnailPath}}" alt="" class="avatar avatar-lg">{{end}}
             <div>
                 <h1 class="page-heading">{{.Channel.Name}}</h1>
                 {{if .Channel.Handle}}<p class="creator-handle">{{.Channel.Handle}}</p>{{end}}
@@ -19,7 +19,7 @@
             <a href="/videos/{{.YoutubeVideoID}}" class="thumb-link">
                 <div class="thumb">
                     {{if .ThumbnailRelPath}}
-                    <img src="/data/{{.ThumbnailRelPath}}" alt="" loading="lazy">
+                    <img src="/data/{{webPath .ThumbnailRelPath}}" alt="" loading="lazy">
                     {{end}}
                     <span class="badge-duration">{{fmtDuration .DurationSeconds}}</span>
                 </div>

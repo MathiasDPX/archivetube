@@ -6,7 +6,7 @@
     <div class="creators-list">
         {{range .Channels}}
         <a href="/creators/{{.YoutubeChannelID}}" class="creator-row">
-            {{if .ThumbnailPath}}<img src="/data/{{.ThumbnailPath}}" alt="" class="avatar">{{end}}
+            {{if .ThumbnailPath}}<img src="/data/{{webPath .ThumbnailPath}}" alt="" class="avatar">{{end}}
             <span class="creator-name">{{.Name}}</span>
             {{if .Handle}}<span class="creator-handle">{{.Handle}}</span>{{end}}
         </a>

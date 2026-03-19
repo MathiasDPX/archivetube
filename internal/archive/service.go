@@ -125,6 +125,7 @@ func (s *Service) ArchiveURL(ctx context.Context, url string) error {
 		return fmt.Errorf("moving info json: %w", err)
 	}
 	infoJSONRel, _ := filepath.Rel(s.DataDir, finalInfoPath)
+	infoJSONRel = filepath.ToSlash(infoJSONRel)
 
 	var finalThumbnailRel string
 	if thumbnailFile != "" {
@@ -134,6 +135,7 @@ func (s *Service) ArchiveURL(ctx context.Context, url string) error {
 			return fmt.Errorf("moving thumbnail: %w", err)
 		}
 		finalThumbnailRel, _ = filepath.Rel(s.DataDir, finalThumbPath)
+		finalThumbnailRel = filepath.ToSlash(finalThumbnailRel)
 	}
 
 	type subtitleEntry struct {
@@ -150,11 +152,13 @@ func (s *Service) ArchiveURL(ctx context.Context, url string) error {
 			return fmt.Errorf("moving subtitle %s: %w", name, err)
 		}
 		rel, _ := filepath.Rel(s.DataDir, finalSubPath)
+		rel = filepath.ToSlash(rel)
 		subtitles = append(subtitles, subtitleEntry{language: lang, relPath: rel})
 	}
 
 	// Compute relative video path and file size
 	videoRel, _ := filepath.Rel(s.DataDir, finalVideoPath)
+	videoRel = filepath.ToSlash(videoRel)
 	var fileSizeBytes int64
 	if fi, err := os.Stat(finalVideoPath); err == nil {
 		fileSizeBytes = fi.Size()
@@ -177,9 +181,11 @@ func (s *Service) ArchiveURL(ctx context.Context, url string) error {
 		// Avatar not yet downloaded — try to fetch it
 		if dlErr := fetchChannelAvatar(ctx, info.ChannelURL, avatarPath); dlErr == nil {
 			avatarRel, _ = filepath.Rel(s.DataDir, avatarPath)
+			avatarRel = filepath.ToSlash(avatarRel)
 		}
 	} else {
 		avatarRel, _ = filepath.Rel(s.DataDir, avatarPath)
+		avatarRel = filepath.ToSlash(avatarRel)
 	}
 
 	channel := &domain.Channel{
