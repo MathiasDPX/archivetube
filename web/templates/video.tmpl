@@ -15,7 +15,7 @@
 
         <div class="watch-bar">
             <a href="/creators/{{.Channel.YoutubeChannelID}}" class="watch-channel">
-                {{if .Channel.ThumbnailPath}}<img src="/data/{{webPath .Channel.ThumbnailPath}}" alt="" class="avatar">{{end}}
+                {{if .Channel.ThumbnailPath}}<img src="/data/{{webPath .Channel.ThumbnailPath}}" alt="" class="avatar avatar-channel">{{end}}
                 <span>{{.Channel.Name}}</span>
             </a>
             <div class="watch-actions">

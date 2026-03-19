@@ -3,12 +3,9 @@ package archive
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -170,29 +167,20 @@ func (s *Service) ArchiveURL(ctx context.Context, url string) error {
 		return fmt.Errorf("parsing upload date %q: %w", info.UploadDate, err)
 	}
 
-	// 10. Upsert channel (with avatar)
+	// 10. Upsert channel (with avatar + banner)
 	channelDir := filepath.Join(s.DataDir, "media", "channels", info.ChannelID)
 	if err := os.MkdirAll(channelDir, 0o755); err != nil {
 		return fmt.Errorf("creating channel dir: %w", err)
 	}
-	avatarPath := filepath.Join(channelDir, "avatar.jpg")
-	var avatarRel string
-	if _, statErr := os.Stat(avatarPath); statErr != nil {
-		// Avatar not yet downloaded — try to fetch it
-		if dlErr := fetchChannelAvatar(ctx, info.ChannelURL, avatarPath); dlErr == nil {
-			avatarRel, _ = filepath.Rel(s.DataDir, avatarPath)
-			avatarRel = filepath.ToSlash(avatarRel)
-		}
-	} else {
-		avatarRel, _ = filepath.Rel(s.DataDir, avatarPath)
-		avatarRel = filepath.ToSlash(avatarRel)
-	}
+
+	avatarRel, bannerRel := s.fetchChannelImages(ctx, channelDir, info.ChannelURL)
 
 	channel := &domain.Channel{
 		YoutubeChannelID: info.ChannelID,
 		Name:             info.Channel,
 		URL:              info.ChannelURL,
 		ThumbnailPath:    avatarRel,
+		BannerPath:       bannerRel,
 	}
 	channelID, err := s.Store.UpsertChannel(channel)
 	if err != nil {
@@ -264,51 +252,80 @@ func extractSubtitleLang(filename string) string {
 	return "unknown"
 }
 
-var ogImageRe = regexp.MustCompile(`<meta\s+property="og:image"\s+content="([^"]+)"`)
-
-// fetchChannelAvatar downloads the channel avatar from YouTube and saves it locally.
-func fetchChannelAvatar(ctx context.Context, channelURL, destPath string) error {
+// fetchChannelImages uses yt-dlp to download the channel avatar and banner.
+// It returns (avatarRelPath, bannerRelPath) relative to DataDir.
+func (s *Service) fetchChannelImages(ctx context.Context, channelDir, channelURL string) (string, string) {
 	if channelURL == "" {
-		return nil
-	}
-	req, err := http.NewRequestWithContext(ctx, "GET", channelURL, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("User-Agent", "Mozilla/5.0")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 512*1024))
-	if err != nil {
-		return err
-	}
-	matches := ogImageRe.FindSubmatch(body)
-	if matches == nil {
-		return fmt.Errorf("og:image not found")
-	}
-	avatarURL := string(matches[1])
-
-	req2, err := http.NewRequestWithContext(ctx, "GET", avatarURL, nil)
-	if err != nil {
-		return err
-	}
-	resp2, err := http.DefaultClient.Do(req2)
-	if err != nil {
-		return err
-	}
-	defer resp2.Body.Close()
-	if resp2.StatusCode != 200 {
-		return fmt.Errorf("avatar download status %d", resp2.StatusCode)
+		return "", ""
 	}
 
-	f, err := os.Create(destPath)
-	if err != nil {
-		return err
+	// Check if already downloaded
+	avatarRel := findExistingImage(s.DataDir, channelDir, "avatar")
+	bannerRel := findExistingImage(s.DataDir, channelDir, "banner")
+	if avatarRel != "" && bannerRel != "" {
+		return avatarRel, bannerRel
 	}
-	defer f.Close()
-	_, err = io.Copy(f, resp2.Body)
-	return err
+
+	// Use yt-dlp to dump channel info JSON (no download)
+	tmpDir, err := os.MkdirTemp(TmpDir(s.DataDir), "ch-*")
+	if err != nil {
+		return avatarRel, bannerRel
+	}
+	defer os.RemoveAll(tmpDir)
+
+	outTmpl := filepath.Join(tmpDir, "channel.%(ext)s")
+	args := []string{
+		"--write-thumbnail",
+		"--skip-download",
+		"--playlist-items", "0",
+		"-o", outTmpl,
+		channelURL,
+	}
+	cmd := exec.CommandContext(ctx, s.YtDlpPath, args...)
+	cmd.CombinedOutput()
+
+	// yt-dlp writes avatar as channel.jpg/webp and banner as channel.banner_background.jpg/webp
+	if avatarRel == "" {
+		for _, ext := range []string{"jpg", "png", "webp"} {
+			src := filepath.Join(tmpDir, "channel."+ext)
+			if _, err := os.Stat(src); err == nil {
+				dst := filepath.Join(channelDir, "avatar."+ext)
+				if os.Rename(src, dst) == nil {
+					avatarRel, _ = filepath.Rel(s.DataDir, dst)
+					avatarRel = filepath.ToSlash(avatarRel)
+				}
+				break
+			}
+		}
+	}
+
+	if bannerRel == "" {
+		entries, _ := os.ReadDir(tmpDir)
+		for _, e := range entries {
+			if strings.Contains(e.Name(), "banner") {
+				src := filepath.Join(tmpDir, e.Name())
+				ext := filepath.Ext(e.Name())
+				dst := filepath.Join(channelDir, "banner"+ext)
+				if os.Rename(src, dst) == nil {
+					bannerRel, _ = filepath.Rel(s.DataDir, dst)
+					bannerRel = filepath.ToSlash(bannerRel)
+				}
+				break
+			}
+		}
+	}
+
+	return avatarRel, bannerRel
+}
+
+// findExistingImage checks if an image with the given prefix already exists in dir.
+func findExistingImage(dataDir, dir, prefix string) string {
+	for _, ext := range []string{"jpg", "png", "webp"} {
+		p := filepath.Join(dir, prefix+"."+ext)
+		if _, err := os.Stat(p); err == nil {
+			rel, _ := filepath.Rel(dataDir, p)
+			return filepath.ToSlash(rel)
+		}
+	}
+	return ""
 }

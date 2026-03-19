@@ -19,6 +19,7 @@ type InfoJSON struct {
 	UploaderID     string  `json:"uploader_id"`
 	UploaderURL    string  `json:"uploader_url"`
 	Thumbnail      string  `json:"thumbnail"`
+	ChannelBanner  string  `json:"channel_banner_url"`
 	Width          int     `json:"width"`
 	Height         int     `json:"height"`
 	FilesizeApprox float64 `json:"filesize_approx"`

@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS channels (
     url                TEXT    NOT NULL DEFAULT '',
     description        TEXT    NOT NULL DEFAULT '',
     thumbnail_path     TEXT    NOT NULL DEFAULT '',
+    banner_path        TEXT    NOT NULL DEFAULT '',
     created_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -87,6 +88,9 @@ func New(dbPath string) (*Store, error) {
 		db.Close()
 		return nil, err
 	}
+
+	// Add banner_path column if missing (existing databases)
+	db.Exec("ALTER TABLE channels ADD COLUMN banner_path TEXT NOT NULL DEFAULT ''")
 
 	return &Store{db: db}, nil
 }

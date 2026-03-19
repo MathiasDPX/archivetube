@@ -1,6 +1,11 @@
 {{define "title"}}{{.Channel.Name}} - ArchiveTube{{end}}
 {{define "content"}}
 <div class="page-shell">
+    {{if .Channel.BannerPath}}
+    <div class="creator-banner">
+        <img src="/data/{{webPath .Channel.BannerPath}}" alt="">
+    </div>
+    {{end}}
     <div class="creator-header">
         <div class="creator-profile">
             {{if .Channel.ThumbnailPath}}<img src="/data/{{webPath .Channel.ThumbnailPath}}" alt="" class="avatar avatar-lg">{{end}}

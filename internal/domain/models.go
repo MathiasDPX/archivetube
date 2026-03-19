@@ -10,6 +10,7 @@ type Channel struct {
 	URL              string
 	Description      string
 	ThumbnailPath    string
+	BannerPath       string
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
