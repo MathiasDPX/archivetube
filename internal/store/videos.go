@@ -111,7 +111,7 @@ func (s *Store) ListVideos(query string, sort string, limit, offset int) ([]doma
 		FROM videos v
 		JOIN channels c ON c.id = v.channel_id
 		%s
-		ORDER BY v.archived_at %s
+		ORDER BY v.published_at %s
 		LIMIT ? OFFSET ?`, where, orderDir)
 
 	rows, err := s.db.Query(listSQL, append(args, limit, offset)...)
@@ -150,7 +150,7 @@ func (s *Store) ListVideosByChannel(channelID int64, limit, offset int) ([]domai
 		FROM videos v
 		JOIN channels c ON c.id = v.channel_id
 		WHERE v.channel_id = ?
-		ORDER BY v.archived_at DESC
+		ORDER BY v.published_at DESC
 		LIMIT ? OFFSET ?`, channelID, limit, offset)
 	if err != nil {
 		return nil, 0, err

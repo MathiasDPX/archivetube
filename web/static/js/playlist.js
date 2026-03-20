@@ -80,8 +80,10 @@
                     errorEl.style.display = "";
                     return;
                 }
-                entries = data;
-                pickerTitle.textContent = data.length + " video" + (data.length !== 1 ? "s" : "");
+                entries = data.sort(function (a, b) {
+                    return (a.release_date || "").localeCompare(b.release_date || "");
+                });
+                pickerTitle.textContent = entries.length + " video" + (entries.length !== 1 ? "s" : "");
                 renderEntries();
             })
             .catch(function (err) {
@@ -108,9 +110,15 @@
         return d.innerHTML;
     }
 
+    function fmtDate(d) {
+        if (!d || d.length !== 8) return "";
+        return d.substring(0, 4) + "-" + d.substring(4, 6) + "-" + d.substring(6, 8);
+    }
+
     function renderEntries() {
         listEl.innerHTML = entries.map(function (e, i) {
             var dur = fmtDuration(e.duration);
+            var date = fmtDate(e.release_date);
             return '<label class="playlist-entry" for="pl-' + i + '">' +
                 '<div class="playlist-entry-thumb">' +
                 '<img src="' + escapeHTML(e.thumbnail) + '" alt="" loading="lazy">' +
@@ -118,7 +126,7 @@
                 '</div>' +
                 '<div class="playlist-entry-info">' +
                 '<span class="playlist-entry-title">' + escapeHTML(e.title || e.id) + '</span>' +
-                '<span class="playlist-entry-id">' + escapeHTML(e.id) + '</span>' +
+                '<span class="playlist-entry-id">' + escapeHTML(e.id) + (date ? ' · ' + date : '') + '</span>' +
                 '</div>' +
                 '<input type="checkbox" class="playlist-cb" id="pl-' + i + '" data-idx="' + i + '" checked>' +
                 '</label>';
