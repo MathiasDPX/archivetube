@@ -375,11 +375,12 @@ func findExistingImage(dataDir, dir, prefix string) string {
 
 // PlaylistEntry holds metadata for a single video in a playlist/channel.
 type PlaylistEntry struct {
-	ID        string  `json:"id"`
-	Title     string  `json:"title"`
-	Thumbnail string  `json:"thumbnail"`
-	Duration  float64 `json:"duration"`
-	URL       string  `json:"url"`
+	ID          string  `json:"id"`
+	Title       string  `json:"title"`
+	Thumbnail   string  `json:"thumbnail"`
+	Duration    float64 `json:"duration"`
+	URL         string  `json:"url"`
+	ReleaseDate string  `json:"release_date"`
 }
 
 // FetchPlaylistEntries uses yt-dlp to list all videos in a playlist or channel
@@ -409,10 +410,12 @@ func (s *Service) FetchPlaylistEntries(ctx context.Context, url string) ([]Playl
 			Thumbnails []struct {
 				URL string `json:"url"`
 			} `json:"thumbnails"`
-			Thumbnail  string  `json:"thumbnail"`
-			Duration   float64 `json:"duration"`
-			URL        string  `json:"url"`
-			WebpageURL string  `json:"webpage_url"`
+			Thumbnail   string  `json:"thumbnail"`
+			Duration    float64 `json:"duration"`
+			URL         string  `json:"url"`
+			WebpageURL  string  `json:"webpage_url"`
+			ReleaseDate string  `json:"release_date"`
+			UploadDate  string  `json:"upload_date"`
 		}
 		if err := json.Unmarshal([]byte(line), &raw); err != nil {
 			continue
@@ -434,12 +437,18 @@ func (s *Service) FetchPlaylistEntries(ctx context.Context, url string) ([]Playl
 			videoURL = "https://www.youtube.com/watch?v=" + raw.ID
 		}
 
+		releaseDate := raw.ReleaseDate
+		if releaseDate == "" {
+			releaseDate = raw.UploadDate
+		}
+
 		entries = append(entries, PlaylistEntry{
-			ID:        raw.ID,
-			Title:     raw.Title,
-			Thumbnail: thumbnail,
-			Duration:  raw.Duration,
-			URL:       videoURL,
+			ID:          raw.ID,
+			Title:       raw.Title,
+			Thumbnail:   thumbnail,
+			Duration:    raw.Duration,
+			URL:         videoURL,
+			ReleaseDate: releaseDate,
 		})
 	}
 
