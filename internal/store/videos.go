@@ -8,7 +8,7 @@ import (
 )
 
 func (s *Store) UpsertVideo(v *domain.Video) (int64, error) {
-	res, err := s.db.Exec(`
+	_, err := s.db.Exec(`
 		INSERT INTO videos (youtube_video_id, channel_id, title, description, duration_seconds,
 			published_at, webpage_url, video_rel_path, video_ext, thumbnail_rel_path,
 			info_json_rel_path, file_size_bytes, width, height)
@@ -34,15 +34,10 @@ func (s *Store) UpsertVideo(v *domain.Video) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
+	var id int64
+	row := s.db.QueryRow("SELECT id FROM videos WHERE youtube_video_id = ?", v.YoutubeVideoID)
+	if err := row.Scan(&id); err != nil {
 		return 0, err
-	}
-	if id == 0 {
-		row := s.db.QueryRow("SELECT id FROM videos WHERE youtube_video_id = ?", v.YoutubeVideoID)
-		if err := row.Scan(&id); err != nil {
-			return 0, err
-		}
 	}
 	return id, nil
 }

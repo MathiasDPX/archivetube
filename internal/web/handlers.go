@@ -216,6 +216,46 @@ func (h *handlers) handleQueueClear(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/archive", http.StatusSeeOther)
 }
 
+func (h *handlers) handlePlaylistFetch(w http.ResponseWriter, r *http.Request) {
+	url := r.URL.Query().Get("url")
+	if url == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "url parameter is required"})
+		return
+	}
+
+	entries, err := h.archive.FetchPlaylistEntries(r.Context(), url)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(entries)
+}
+
+func (h *handlers) handleArchiveBatch(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		URLs []string `json:"urls"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	for _, url := range body.URLs {
+		if url != "" {
+			h.queue.Enqueue(url)
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
 func (h *handlers) render(w http.ResponseWriter, name string, data any) {
 	if err := h.tmpl.Render(w, name, data); err != nil {
 		log.Printf("render error: %v", err)

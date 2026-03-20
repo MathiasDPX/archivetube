@@ -2,6 +2,7 @@ package archive
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -370,4 +371,77 @@ func findExistingImage(dataDir, dir, prefix string) string {
 		}
 	}
 	return ""
+}
+
+// PlaylistEntry holds metadata for a single video in a playlist/channel.
+type PlaylistEntry struct {
+	ID        string  `json:"id"`
+	Title     string  `json:"title"`
+	Thumbnail string  `json:"thumbnail"`
+	Duration  float64 `json:"duration"`
+	URL       string  `json:"url"`
+}
+
+// FetchPlaylistEntries uses yt-dlp to list all videos in a playlist or channel
+// without downloading them. It returns metadata for each entry.
+func (s *Service) FetchPlaylistEntries(ctx context.Context, url string) ([]PlaylistEntry, error) {
+	args := []string{
+		"--flat-playlist",
+		"--dump-json",
+		"--no-warnings",
+		url,
+	}
+
+	cmd := exec.CommandContext(ctx, s.YtDlpPath, args...)
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("yt-dlp flat-playlist failed: %w", err)
+	}
+
+	var entries []PlaylistEntry
+	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
+		if line == "" {
+			continue
+		}
+		var raw struct {
+			ID         string  `json:"id"`
+			Title      string  `json:"title"`
+			Thumbnails []struct {
+				URL string `json:"url"`
+			} `json:"thumbnails"`
+			Thumbnail  string  `json:"thumbnail"`
+			Duration   float64 `json:"duration"`
+			URL        string  `json:"url"`
+			WebpageURL string  `json:"webpage_url"`
+		}
+		if err := json.Unmarshal([]byte(line), &raw); err != nil {
+			continue
+		}
+
+		thumbnail := raw.Thumbnail
+		if thumbnail == "" && len(raw.Thumbnails) > 0 {
+			thumbnail = raw.Thumbnails[len(raw.Thumbnails)-1].URL
+		}
+		if thumbnail == "" {
+			thumbnail = "https://i.ytimg.com/vi/" + raw.ID + "/hqdefault.jpg"
+		}
+
+		videoURL := raw.WebpageURL
+		if videoURL == "" {
+			videoURL = raw.URL
+		}
+		if videoURL == "" {
+			videoURL = "https://www.youtube.com/watch?v=" + raw.ID
+		}
+
+		entries = append(entries, PlaylistEntry{
+			ID:        raw.ID,
+			Title:     raw.Title,
+			Thumbnail: thumbnail,
+			Duration:  raw.Duration,
+			URL:       videoURL,
+		})
+	}
+
+	return entries, nil
 }
