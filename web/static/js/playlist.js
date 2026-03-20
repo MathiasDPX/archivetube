@@ -123,6 +123,7 @@
                 '<div class="playlist-entry-thumb">' +
                 '<img src="' + escapeHTML(e.thumbnail) + '" alt="" loading="lazy">' +
                 (dur ? '<span class="badge-duration">' + dur + '</span>' : '') +
+                (e.is_short ? '<span class="badge-short">Short</span>' : '') +
                 '</div>' +
                 '<div class="playlist-entry-info">' +
                 '<span class="playlist-entry-title">' + escapeHTML(e.title || e.id) + '</span>' +

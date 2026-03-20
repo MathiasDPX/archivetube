@@ -381,6 +381,7 @@ type PlaylistEntry struct {
 	Duration    float64 `json:"duration"`
 	URL         string  `json:"url"`
 	ReleaseDate string  `json:"release_date"`
+	IsShort     bool    `json:"is_short"`
 }
 
 // FetchPlaylistEntries uses yt-dlp to list all videos in a playlist or channel
@@ -449,6 +450,7 @@ func (s *Service) FetchPlaylistEntries(ctx context.Context, url string) ([]Playl
 			Duration:    raw.Duration,
 			URL:         videoURL,
 			ReleaseDate: releaseDate,
+			IsShort:     strings.Contains(videoURL, "/shorts/"),
 		})
 	}
 
