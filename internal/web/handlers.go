@@ -211,6 +211,73 @@ func (h *handlers) handleQueueStatus(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(h.queue.Jobs())
 }
 
+func (h *handlers) handleAPIVideos(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+	perPage := 24
+	offset := (page - 1) * perPage
+
+	videos, total, err := h.store.ListVideos(query, "desc", perPage, offset)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"videos":  videos,
+		"page":    page,
+		"total":   total,
+		"perPage": perPage,
+	})
+}
+
+func (h *handlers) handleAPICreatorVideos(w http.ResponseWriter, r *http.Request) {
+	ytID := r.PathValue("id")
+
+	channel, err := h.store.GetChannelByYoutubeID(ytID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+	if channel == nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{"error": "not found"})
+		return
+	}
+
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+	perPage := 24
+	offset := (page - 1) * perPage
+
+	videos, total, err := h.store.ListVideosByChannel(channel.ID, perPage, offset)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"videos":  videos,
+		"page":    page,
+		"total":   total,
+		"perPage": perPage,
+	})
+}
+
 func (h *handlers) handleQueueClear(w http.ResponseWriter, r *http.Request) {
 	h.queue.ClearFinished()
 	http.Redirect(w, r, "/archive", http.StatusSeeOther)

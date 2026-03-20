@@ -18,7 +18,7 @@
     </div>
 
     {{if .Videos}}
-    <div class="video-grid">
+    <div class="video-grid" data-infinite-grid data-infinite-api="/api/creators/{{.Channel.YoutubeChannelID}}/videos" data-infinite-page="{{.Page}}" data-infinite-total="{{.Total}}" data-infinite-perpage="{{.PerPage}}" data-infinite-show-channel="false">
         {{range .Videos}}
         <div class="video-card">
             <a href="/videos/{{.YoutubeVideoID}}" class="thumb-link">
@@ -36,20 +36,11 @@
         </div>
         {{end}}
     </div>
-
-    {{if hasPages .Total .PerPage}}
-    <div class="pagination">
-        {{if gt .Page 1}}
-        <a href="?page={{sub .Page 1}}" class="pg-btn">← Previous</a>
-        {{end}}
-        <span class="pg-info">Page {{.Page}}</span>
-        {{if lt (mul .Page .PerPage) .Total}}
-        <a href="?page={{add .Page 1}}" class="pg-btn">Next →</a>
-        {{end}}
-    </div>
-    {{end}}
     {{else}}
     <div class="empty"><p>No archived videos from this creator yet.</p></div>
     {{end}}
 </div>
+{{end}}
+{{define "scripts"}}
+<script src="/static/js/infinite-scroll.js"></script>
 {{end}}

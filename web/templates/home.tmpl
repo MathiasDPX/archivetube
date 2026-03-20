@@ -2,7 +2,7 @@
 {{define "content"}}
 <div class="page-shell">
     {{if .Videos}}
-    <div class="video-grid">
+    <div class="video-grid" data-infinite-grid data-infinite-api="/api/videos?q={{.Query}}" data-infinite-page="{{.Page}}" data-infinite-total="{{.Total}}" data-infinite-perpage="{{.PerPage}}">
         {{range .Videos}}
         <div class="video-card">
             <a href="/videos/{{.YoutubeVideoID}}" class="thumb-link">
@@ -21,19 +21,6 @@
         </div>
         {{end}}
     </div>
-
-    {{if hasPages .Total .PerPage}}
-    <div class="pagination">
-        {{if gt .Page 1}}
-        <a href="/?q={{.Query}}&page={{sub .Page 1}}" class="pg-btn">← Previous</a>
-        {{end}}
-        <span class="pg-info">Page {{.Page}}</span>
-        {{if lt (mul .Page .PerPage) .Total}}
-        <a href="/?q={{.Query}}&page={{add .Page 1}}" class="pg-btn">Next →</a>
-        {{end}}
-    </div>
-    {{end}}
-
     {{else}}
     <div class="empty">
         <p>No videos found.</p>
@@ -41,4 +28,7 @@
     </div>
     {{end}}
 </div>
+{{end}}
+{{define "scripts"}}
+<script src="/static/js/infinite-scroll.js"></script>
 {{end}}
