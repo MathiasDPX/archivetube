@@ -18,6 +18,7 @@ ARG TARGETARCH
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    ffmpeg \
     wget \
     && rm -rf /var/lib/apt/lists/* \
     && case "${TARGETARCH}" in \
