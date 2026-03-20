@@ -82,10 +82,10 @@ func (s *Service) ArchiveURL(ctx context.Context, url string) error {
 		return fmt.Errorf("video %s is already archived", info.ID)
 	}
 
-	// 5. Find the video file
-	videoFile := filepath.Join(tmpDir, "video.mp4")
-	if _, err := os.Stat(videoFile); err != nil {
-		return fmt.Errorf("video file not found at %s: %w", videoFile, err)
+	// 5. Find the video file (yt-dlp may output a different extension than .mp4)
+	videoFile, err := findDownloadedVideo(tmpDir)
+	if err != nil {
+		return fmt.Errorf("locating downloaded video in %s: %w", tmpDir, err)
 	}
 
 	// 6. Find subtitle files (video.*.vtt)
@@ -111,7 +111,8 @@ func (s *Service) ArchiveURL(ctx context.Context, url string) error {
 	}
 
 	// 9. Move files to final dir
-	finalVideoPath := filepath.Join(finalDir, "video.mp4")
+	videoExt := strings.TrimPrefix(filepath.Ext(videoFile), ".")
+	finalVideoPath := filepath.Join(finalDir, "video."+videoExt)
 	if err := os.Rename(videoFile, finalVideoPath); err != nil {
 		return fmt.Errorf("moving video file: %w", err)
 	}
@@ -198,7 +199,7 @@ func (s *Service) ArchiveURL(ctx context.Context, url string) error {
 		WebpageURL:       info.WebpageURL,
 		ThumbnailRelPath: finalThumbnailRel,
 		VideoRelPath:     videoRel,
-		VideoExt:         "mp4",
+		VideoExt:         videoExt,
 		InfoJSONRelPath:  infoJSONRel,
 		Width:            info.Width,
 		Height:           info.Height,
@@ -239,6 +240,47 @@ func (s *Service) ArchiveURL(ctx context.Context, url string) error {
 	}
 
 	return nil
+}
+
+// findDownloadedVideo scans dir for the video file downloaded by yt-dlp.
+// yt-dlp is invoked with "-o <dir>/video.%(ext)s", so the stem is always "video".
+// The extension depends on the format selected and whether merging occurred.
+// This function returns the full path to the video file, or an error if none is found.
+func findDownloadedVideo(dir string) (string, error) {
+	// Extensions that are never the video stream itself.
+	nonVideoExts := map[string]bool{
+		".json": true,
+		".vtt":  true,
+		".srt":  true,
+		".ass":  true,
+		".ssa":  true,
+		".jpg":  true,
+		".jpeg": true,
+		".png":  true,
+		".webp": true,
+		".part": true,
+		".ytdl": true,
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return "", fmt.Errorf("reading temp dir %s: %w", dir, err)
+	}
+
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		ext := strings.ToLower(filepath.Ext(e.Name()))
+		if nonVideoExts[ext] {
+			continue
+		}
+		stem := strings.TrimSuffix(e.Name(), filepath.Ext(e.Name()))
+		if stem == "video" {
+			return filepath.Join(dir, e.Name()), nil
+		}
+	}
+	return "", fmt.Errorf("no video file found in %s", dir)
 }
 
 // extractSubtitleLang extracts the language code from a subtitle filename.
