@@ -7,7 +7,7 @@ import (
 )
 
 func (s *Store) UpsertChannel(ch *domain.Channel) (int64, error) {
-	res, err := s.db.Exec(`
+	_, err := s.db.Exec(`
 		INSERT INTO channels (youtube_channel_id, handle, name, url, description, thumbnail_path, banner_path, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
 		ON CONFLICT(youtube_channel_id) DO UPDATE SET
@@ -23,15 +23,10 @@ func (s *Store) UpsertChannel(ch *domain.Channel) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
+	var id int64
+	row := s.db.QueryRow("SELECT id FROM channels WHERE youtube_channel_id = ?", ch.YoutubeChannelID)
+	if err := row.Scan(&id); err != nil {
 		return 0, err
-	}
-	if id == 0 {
-		row := s.db.QueryRow("SELECT id FROM channels WHERE youtube_channel_id = ?", ch.YoutubeChannelID)
-		if err := row.Scan(&id); err != nil {
-			return 0, err
-		}
 	}
 	return id, nil
 }

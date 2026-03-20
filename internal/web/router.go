@@ -38,6 +38,8 @@ func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service,
 	mux.HandleFunc("POST /archive", h.handleArchiveSubmit)
 	mux.HandleFunc("GET /api/queue", h.handleQueueStatus)
 	mux.HandleFunc("POST /archive/clear", h.handleQueueClear)
+	mux.HandleFunc("GET /api/playlist", h.handlePlaylistFetch)
+	mux.HandleFunc("POST /archive/batch", h.handleArchiveBatch)
 
 	return logRequests(mux)
 }
