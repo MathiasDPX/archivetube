@@ -3,11 +3,14 @@ package archive
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/MathiasDPX/archivetube/internal/domain"
@@ -114,13 +117,13 @@ func (s *Service) ArchiveURL(ctx context.Context, url string) error {
 	// 9. Move files to final dir
 	videoExt := strings.TrimPrefix(filepath.Ext(videoFile), ".")
 	finalVideoPath := filepath.Join(finalDir, "video."+videoExt)
-	if err := os.Rename(videoFile, finalVideoPath); err != nil {
+	if err := moveFile(videoFile, finalVideoPath); err != nil {
 		return fmt.Errorf("moving video file: %w", err)
 	}
 
 	// Move info.json
 	finalInfoPath := filepath.Join(finalDir, "video.info.json")
-	if err := os.Rename(infoPath, finalInfoPath); err != nil {
+	if err := moveFile(infoPath, finalInfoPath); err != nil {
 		return fmt.Errorf("moving info json: %w", err)
 	}
 	infoJSONRel, _ := filepath.Rel(s.DataDir, finalInfoPath)
@@ -130,7 +133,7 @@ func (s *Service) ArchiveURL(ctx context.Context, url string) error {
 	if thumbnailFile != "" {
 		thumbName := filepath.Base(thumbnailFile)
 		finalThumbPath := filepath.Join(finalDir, thumbName)
-		if err := os.Rename(thumbnailFile, finalThumbPath); err != nil {
+		if err := moveFile(thumbnailFile, finalThumbPath); err != nil {
 			return fmt.Errorf("moving thumbnail: %w", err)
 		}
 		finalThumbnailRel, _ = filepath.Rel(s.DataDir, finalThumbPath)
@@ -147,7 +150,7 @@ func (s *Service) ArchiveURL(ctx context.Context, url string) error {
 		name := filepath.Base(sf)
 		lang := extractSubtitleLang(name)
 		finalSubPath := filepath.Join(finalDir, name)
-		if err := os.Rename(sf, finalSubPath); err != nil {
+		if err := moveFile(sf, finalSubPath); err != nil {
 			return fmt.Errorf("moving subtitle %s: %w", name, err)
 		}
 		rel, _ := filepath.Rel(s.DataDir, finalSubPath)
@@ -243,6 +246,42 @@ func (s *Service) ArchiveURL(ctx context.Context, url string) error {
 	return nil
 }
 
+// moveFile attempts an atomic os.Rename; if it fails with EXDEV (cross-device),
+// it falls back to copy + remove so that moves across filesystems (e.g. local → rclone FUSE) work.
+func moveFile(src, dst string) error {
+	err := os.Rename(src, dst)
+	if err == nil {
+		return nil
+	}
+	var linkErr *os.LinkError
+	if !errors.As(err, &linkErr) || !errors.Is(linkErr.Err, syscall.EXDEV) {
+		return err
+	}
+
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("opening source: %w", err)
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return fmt.Errorf("creating destination: %w", err)
+	}
+	defer dstFile.Close()
+
+	if _, err := io.Copy(dstFile, srcFile); err != nil {
+		os.Remove(dst)
+		return fmt.Errorf("copying data: %w", err)
+	}
+	if err := dstFile.Close(); err != nil {
+		os.Remove(dst)
+		return fmt.Errorf("closing destination: %w", err)
+	}
+	srcFile.Close()
+	return os.Remove(src)
+}
+
 // findDownloadedVideo scans dir for the video file downloaded by yt-dlp.
 // yt-dlp is invoked with "-o <dir>/video.%(ext)s", so the stem is always "video".
 // The extension depends on the format selected and whether merging occurred.
@@ -333,7 +372,7 @@ func (s *Service) fetchChannelImages(ctx context.Context, channelDir, channelURL
 			src := filepath.Join(tmpDir, "channel."+ext)
 			if _, err := os.Stat(src); err == nil {
 				dst := filepath.Join(channelDir, "avatar."+ext)
-				if os.Rename(src, dst) == nil {
+				if moveFile(src, dst) == nil {
 					avatarRel, _ = filepath.Rel(s.DataDir, dst)
 					avatarRel = filepath.ToSlash(avatarRel)
 				}
@@ -349,7 +388,7 @@ func (s *Service) fetchChannelImages(ctx context.Context, channelDir, channelURL
 				src := filepath.Join(tmpDir, e.Name())
 				ext := filepath.Ext(e.Name())
 				dst := filepath.Join(channelDir, "banner"+ext)
-				if os.Rename(src, dst) == nil {
+				if moveFile(src, dst) == nil {
 					bannerRel, _ = filepath.Rel(s.DataDir, dst)
 					bannerRel = filepath.ToSlash(bannerRel)
 				}
