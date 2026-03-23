@@ -61,6 +61,7 @@ func (s *Service) ArchiveURL(ctx context.Context, url string) error {
 		"-f", "bv*[ext=mp4]+ba[ext=m4a]/bv*+ba/b",
 		"--merge-output-format", "mp4",
 		"--js-runtimes", "node",
+		"--remote-components", "ejs:github",
 	}
 
 	// Add cookies if file exists
