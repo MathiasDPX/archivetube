@@ -23,6 +23,7 @@ var funcMap = template.FuncMap{
 	"ftoi":        func(f float64) int { return int(f) },
 	"linkify":     linkify,
 	"webPath":     webPath,
+	"loggedIn":    func() bool { return false },
 }
 
 func fmtDuration(seconds int) string {
@@ -113,11 +114,19 @@ func NewTemplates(templateDir string) (*Templates, error) {
 }
 
 // Render executes the named page template, which should invoke the "base" template.
-func (t *Templates) Render(w http.ResponseWriter, name string, data any) error {
+func (t *Templates) Render(w http.ResponseWriter, name string, data any, loggedIn bool) error {
 	tmpl, ok := t.templates[name]
 	if !ok {
 		return fmt.Errorf("template %q not found", name)
 	}
+	// Clone so we can override loggedIn per-request without races.
+	clone, err := tmpl.Clone()
+	if err != nil {
+		return fmt.Errorf("cloning template %s: %w", name, err)
+	}
+	clone.Funcs(template.FuncMap{
+		"loggedIn": func() bool { return loggedIn },
+	})
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	return tmpl.ExecuteTemplate(w, "base", data)
+	return clone.ExecuteTemplate(w, "base", data)
 }

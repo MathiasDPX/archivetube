@@ -70,7 +70,7 @@ func (h *handlers) handleHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.render(w, "home.tmpl", HomeData{
+	h.renderWithRequest(w, r, "home.tmpl", HomeData{
 		Videos:  videos,
 		Query:   query,
 		Page:    page,
@@ -110,7 +110,7 @@ func (h *handlers) handleVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.render(w, "video.tmpl", VideoData{
+	h.renderWithRequest(w, r, "video.tmpl", VideoData{
 		Video:    video,
 		Channel:  channel,
 		Chapters: chapters,
@@ -125,7 +125,7 @@ func (h *handlers) handleCreators(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.render(w, "creators.tmpl", CreatorsData{Channels: channels})
+	h.renderWithRequest(w, r, "creators.tmpl", CreatorsData{Channels: channels})
 }
 
 func (h *handlers) handleCreator(w http.ResponseWriter, r *http.Request) {
@@ -154,7 +154,7 @@ func (h *handlers) handleCreator(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.render(w, "creator.tmpl", CreatorData{
+	h.renderWithRequest(w, r, "creator.tmpl", CreatorData{
 		Channel: channel,
 		Videos:  videos,
 		Page:    page,
@@ -184,7 +184,7 @@ func (h *handlers) handleDownload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) handleArchivePage(w http.ResponseWriter, r *http.Request) {
-	h.render(w, "archive.tmpl", ArchiveData{Jobs: h.queue.Jobs()})
+	h.renderWithRequest(w, r, "archive.tmpl", ArchiveData{Jobs: h.queue.Jobs()})
 }
 
 func (h *handlers) handleArchiveSubmit(w http.ResponseWriter, r *http.Request) {
@@ -195,7 +195,7 @@ func (h *handlers) handleArchiveSubmit(w http.ResponseWriter, r *http.Request) {
 
 	url := r.FormValue("url")
 	if url == "" {
-		h.render(w, "archive.tmpl", ArchiveData{
+		h.renderWithRequest(w, r, "archive.tmpl", ArchiveData{
 			Error: "Please provide a URL.",
 			Jobs:  h.queue.Jobs(),
 		})
@@ -323,8 +323,8 @@ func (h *handlers) handleArchiveBatch(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
-func (h *handlers) render(w http.ResponseWriter, name string, data any) {
-	if err := h.tmpl.Render(w, name, data); err != nil {
+func (h *handlers) renderWithRequest(w http.ResponseWriter, r *http.Request, name string, data any) {
+	if err := h.tmpl.Render(w, name, data, isLoggedIn(r)); err != nil {
 		log.Printf("render error: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}

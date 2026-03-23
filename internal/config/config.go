@@ -3,9 +3,10 @@ package config
 import "os"
 
 type Config struct {
-	ListenAddr string
-	DataDir    string
-	YtDlpPath  string
+	ListenAddr   string
+	DataDir      string
+	YtDlpPath    string
+	PasswordHash string // bcrypt hash from ARCHIVETUBE_PASSWORD env var
 }
 
 func Load() *Config {
@@ -22,6 +23,9 @@ func Load() *Config {
 	}
 	if v := os.Getenv("ARCHIVETUBE_YTDLP_PATH"); v != "" {
 		c.YtDlpPath = v
+	}
+	if v := os.Getenv("ARCHIVETUBE_PASSWORD"); v != "" {
+		c.PasswordHash = v
 	}
 	return c
 }

@@ -22,7 +22,11 @@
             <nav class="nav-links">
                 <a href="/">Home</a>
                 <a href="/creators">Creators</a>
+                {{if loggedIn}}
                 <a href="/archive">Archive</a>
+                {{else}}
+                <a href="/login">Login</a>
+                {{end}}
             </nav>
         </div>
     </header>
