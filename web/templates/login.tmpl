@@ -1,0 +1,18 @@
+{{define "title"}}Login - ArchiveTube{{end}}
+{{define "content"}}
+<div class="page-narrow">
+    <h1 class="page-heading">Login</h1>
+    <p class="page-sub">Enter the password to access archiving features.</p>
+
+    {{if .Error}}
+    <div class="alert alert-error">{{.Error}}</div>
+    {{end}}
+
+    <form method="post" action="/login" class="archive-form">
+        <div class="archive-url-row">
+            <input type="password" id="password" name="password" placeholder="Password" class="form-input" required autofocus>
+            <button type="submit" class="form-submit">Login</button>
+        </div>
+    </form>
+</div>
+{{end}}

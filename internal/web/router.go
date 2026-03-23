@@ -28,20 +28,25 @@ func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service,
 	// Media/data files served from DataDir
 	mux.Handle("GET /data/", http.StripPrefix("/data/", http.FileServer(http.Dir(cfg.DataDir))))
 
+	// Auth
+	mux.HandleFunc("GET /login", h.handleLoginPage)
+	mux.HandleFunc("POST /login", h.handleLoginSubmit)
+	mux.HandleFunc("POST /logout", h.handleLogout)
+
 	// Pages
 	mux.HandleFunc("GET /{$}", h.handleHome)
 	mux.HandleFunc("GET /videos/{id}", h.handleVideo)
 	mux.HandleFunc("GET /creators", h.handleCreators)
 	mux.HandleFunc("GET /creators/{id}", h.handleCreator)
 	mux.HandleFunc("GET /download/{id}", h.handleDownload)
-	mux.HandleFunc("GET /archive", h.handleArchivePage)
-	mux.HandleFunc("POST /archive", h.handleArchiveSubmit)
+	mux.HandleFunc("GET /archive", requireAuth(h.handleArchivePage))
+	mux.HandleFunc("POST /archive", requireAuth(h.handleArchiveSubmit))
 	mux.HandleFunc("GET /api/videos", h.handleAPIVideos)
 	mux.HandleFunc("GET /api/creators/{id}/videos", h.handleAPICreatorVideos)
-	mux.HandleFunc("GET /api/queue", h.handleQueueStatus)
-	mux.HandleFunc("POST /archive/clear", h.handleQueueClear)
-	mux.HandleFunc("GET /api/playlist", h.handlePlaylistFetch)
-	mux.HandleFunc("POST /archive/batch", h.handleArchiveBatch)
+	mux.HandleFunc("GET /api/queue", requireAuthAPI(h.handleQueueStatus))
+	mux.HandleFunc("POST /archive/clear", requireAuth(h.handleQueueClear))
+	mux.HandleFunc("GET /api/playlist", requireAuthAPI(h.handlePlaylistFetch))
+	mux.HandleFunc("POST /archive/batch", requireAuthAPI(h.handleArchiveBatch))
 
 	return logRequests(mux)
 }

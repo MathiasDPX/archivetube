@@ -1,10 +1,20 @@
 # archivetube
 
-A self-hosted YouTube archiving application.
+A self-hosted YouTube archiving application
 
 ## Docker
 
-### Pull and run
+### Configuration
+
+Env variables:
+
+| Variable                   | Default      | Description                    |
+|----------------------------|--------------|--------------------------------|
+| `ARCHIVETUBE_LISTEN`       | `:8080`      | Address to listen on           |
+| `ARCHIVETUBE_DATA_DIR`     | `/app/data`  | Directory for data and media   |
+| `ARCHIVETUBE_YTDLP_PATH`   | `yt-dlp`     | Path or command for yt-dlp     |
+| `ARCHIVETUBE_PASSWORD`     | None         | bcrypt password for login      |
+
 
 ```bash
 docker pull ghcr.io/mathiasdpx/archivetube:latest
@@ -17,20 +27,3 @@ docker run -d \
 ```
 
 Then open [http://localhost:8080](http://localhost:8080).
-
-### Build locally
-
-```bash
-docker build -t archivetube .
-docker run -d -p 8080:8080 -v archivetube-data:/app/data archivetube
-```
-
-### Configuration
-
-The following environment variables are supported:
-
-| Variable                   | Default      | Description                    |
-|----------------------------|--------------|--------------------------------|
-| `ARCHIVETUBE_LISTEN`       | `:8080`      | Address to listen on           |
-| `ARCHIVETUBE_DATA_DIR`     | `/app/data`  | Directory for data and media   |
-| `ARCHIVETUBE_YTDLP_PATH`   | `yt-dlp`     | Path or command for yt-dlp     |
