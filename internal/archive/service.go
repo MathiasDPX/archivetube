@@ -60,8 +60,15 @@ func (s *Service) ArchiveURL(ctx context.Context, url string) error {
 		"--no-write-comments",
 		"-f", "bv*[ext=mp4]+ba[ext=m4a]/bv*+ba/b",
 		"--merge-output-format", "mp4",
-		url,
 	}
+
+	// Add cookies if file exists
+	cookiePath := "/app/cookies.txt"
+	if _, err := os.Stat(cookiePath); err == nil {
+		args = append(args, "--cookies", cookiePath)
+	}
+
+	args = append(args, url)
 
 	// 3. Run the command
 	cmd := exec.CommandContext(ctx, s.YtDlpPath, args...)
@@ -361,8 +368,15 @@ func (s *Service) fetchChannelImages(ctx context.Context, channelDir, channelURL
 		"--skip-download",
 		"--playlist-items", "0",
 		"-o", outTmpl,
-		channelURL,
 	}
+
+	// Add cookies if file exists
+	cookiePath := "/app/cookies.txt"
+	if _, err := os.Stat(cookiePath); err == nil {
+		args = append(args, "--cookies", cookiePath)
+	}
+
+	args = append(args, channelURL)
 	cmd := exec.CommandContext(ctx, s.YtDlpPath, args...)
 	cmd.CombinedOutput()
 
@@ -430,8 +444,15 @@ func (s *Service) FetchPlaylistEntries(ctx context.Context, url string) ([]Playl
 		"--flat-playlist",
 		"--dump-json",
 		"--no-warnings",
-		url,
 	}
+
+	// Add cookies if file exists
+	cookiePath := "/app/cookies.txt"
+	if _, err := os.Stat(cookiePath); err == nil {
+		args = append(args, "--cookies", cookiePath)
+	}
+
+	args = append(args, url)
 
 	cmd := exec.CommandContext(ctx, s.YtDlpPath, args...)
 	output, err := cmd.Output()
