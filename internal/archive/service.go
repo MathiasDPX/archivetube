@@ -20,13 +20,15 @@ import (
 type Service struct {
 	YtDlpPath string
 	DataDir   string
+	Proxy     string
 	Store     *store.Store
 }
 
-func New(ytdlpPath, dataDir string, st *store.Store) *Service {
+func New(ytdlpPath, dataDir, proxy string, st *store.Store) *Service {
 	return &Service{
 		YtDlpPath: ytdlpPath,
 		DataDir:   dataDir,
+		Proxy:     proxy,
 		Store:     st,
 	}
 }
@@ -61,6 +63,10 @@ func (s *Service) ArchiveURL(ctx context.Context, url string) error {
 		"-f", "bv*[ext=mp4]+ba[ext=m4a]/bv*+ba/b",
 		"--merge-output-format", "mp4",
 		"--remote-components", "ejs:npm",
+	}
+
+	if s.Proxy != "" {
+		args = append(args, "--proxy", s.Proxy)
 	}
 
 	// Add cookies if file exists
@@ -371,6 +377,10 @@ func (s *Service) fetchChannelImages(ctx context.Context, channelDir, channelURL
 		"-o", outTmpl,
 	}
 
+	if s.Proxy != "" {
+		args = append(args, "--proxy", s.Proxy)
+	}
+
 	// Add cookies if file exists
 	cookiePath := "/app/cookies.txt"
 	if _, err := os.Stat(cookiePath); err == nil {
@@ -445,6 +455,10 @@ func (s *Service) FetchPlaylistEntries(ctx context.Context, url string) ([]Playl
 		"--flat-playlist",
 		"--dump-json",
 		"--no-warnings",
+	}
+
+	if s.Proxy != "" {
+		args = append(args, "--proxy", s.Proxy)
 	}
 
 	// Add cookies if file exists

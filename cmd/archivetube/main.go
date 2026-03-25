@@ -29,7 +29,7 @@ func main() {
 	}
 	defer st.Close()
 
-	archiveSvc := archive.New(cfg.YtDlpPath, cfg.DataDir, st)
+	archiveSvc := archive.New(cfg.YtDlpPath, cfg.DataDir, cfg.Proxy, st)
 	q := queue.New(archiveSvc.ArchiveURL)
 
 	webPaths := web.DefaultWebPaths()

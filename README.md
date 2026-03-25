@@ -13,6 +13,7 @@ Env variables:
 | `ARCHIVETUBE_LISTEN`       | `:8080`      | Address to listen on           |
 | `ARCHIVETUBE_DATA_DIR`     | `/app/data`  | Directory for data and media   |
 | `ARCHIVETUBE_YTDLP_PATH`   | `yt-dlp`     | Path or command for yt-dlp     |
+| `ARCHIVETUBE_PROXY`        | None         | Proxy URL for yt-dlp           |
 | `ARCHIVETUBE_PASSWORD`     | None         | bcrypt password for login      |
 
 
