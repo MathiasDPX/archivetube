@@ -54,8 +54,13 @@ func isLoggedIn(r *http.Request) bool {
 }
 
 // requireAuth is middleware that redirects to /login if not authenticated.
-func requireAuth(next http.HandlerFunc) http.HandlerFunc {
+// If no password is configured, all requests are allowed through.
+func (h *handlers) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if h.config.PasswordHash == "" {
+			next(w, r)
+			return
+		}
 		if !isLoggedIn(r) {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
@@ -65,8 +70,13 @@ func requireAuth(next http.HandlerFunc) http.HandlerFunc {
 }
 
 // requireAuthAPI is middleware that returns 401 for unauthenticated API requests.
-func requireAuthAPI(next http.HandlerFunc) http.HandlerFunc {
+// If no password is configured, all requests are allowed through.
+func (h *handlers) requireAuthAPI(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if h.config.PasswordHash == "" {
+			next(w, r)
+			return
+		}
 		if !isLoggedIn(r) {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
@@ -76,7 +86,7 @@ func requireAuthAPI(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func (h *handlers) handleLoginPage(w http.ResponseWriter, r *http.Request) {
-	if isLoggedIn(r) {
+	if h.config.PasswordHash == "" || isLoggedIn(r) {
 		http.Redirect(w, r, "/archive", http.StatusSeeOther)
 		return
 	}
