@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -33,8 +35,61 @@ func New(ytdlpPath, dataDir, proxy string, st *store.Store) *Service {
 	}
 }
 
+// ytVideoIDRe matches an 11-character YouTube video ID.
+var ytVideoIDRe = regexp.MustCompile(`^[A-Za-z0-9_-]{11}$`)
+
+// extractVideoID parses the YouTube video ID from a URL without making any network request.
+// Supported formats: youtube.com/watch?v=ID, youtu.be/ID, youtube.com/shorts/ID,
+// youtube.com/embed/ID, youtube.com/v/ID, youtube.com/live/ID.
+func extractVideoID(rawURL string) (string, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid URL: %w", err)
+	}
+
+	host := strings.ToLower(u.Hostname())
+	host = strings.TrimPrefix(host, "www.")
+	host = strings.TrimPrefix(host, "m.")
+
+	switch host {
+	case "youtube.com", "music.youtube.com":
+		// /watch?v=ID
+		if v := u.Query().Get("v"); v != "" && ytVideoIDRe.MatchString(v) {
+			return v, nil
+		}
+		// /shorts/ID, /embed/ID, /v/ID, /live/ID
+		parts := strings.Split(strings.Trim(u.Path, "/"), "/")
+		if len(parts) == 2 && ytVideoIDRe.MatchString(parts[1]) {
+			switch parts[0] {
+			case "shorts", "embed", "v", "live":
+				return parts[1], nil
+			}
+		}
+	case "youtu.be":
+		id := strings.Trim(u.Path, "/")
+		if ytVideoIDRe.MatchString(id) {
+			return id, nil
+		}
+	}
+
+	return "", fmt.Errorf("could not extract YouTube video ID from %q", rawURL)
+}
+
 // ArchiveURL downloads a video and stores its metadata.
 func (s *Service) ArchiveURL(ctx context.Context, url string) error {
+	// 0. Quick check: is this video already archived?
+	ytID, err := extractVideoID(url)
+	if err != nil {
+		return fmt.Errorf("extracting video ID: %w", err)
+	}
+	existing, err := s.Store.GetVideoByYoutubeID(ytID)
+	if err != nil {
+		return fmt.Errorf("checking existing video: %w", err)
+	}
+	if existing != nil {
+		return fmt.Errorf("video %s is already archived", ytID)
+	}
+
 	// 1. Create temp work dir
 	tmpBase := TmpDir(s.DataDir)
 	tmpDir, err := os.MkdirTemp(tmpBase, "dl-*")
@@ -89,15 +144,6 @@ func (s *Service) ArchiveURL(ctx context.Context, url string) error {
 	info, err := parseInfoJSON(infoPath)
 	if err != nil {
 		return fmt.Errorf("parsing info json: %w", err)
-	}
-
-	// Check if video is already archived
-	existing, err := s.Store.GetVideoByYoutubeID(info.ID)
-	if err != nil {
-		return fmt.Errorf("checking existing video: %w", err)
-	}
-	if existing != nil {
-		return fmt.Errorf("video %s is already archived", info.ID)
 	}
 
 	// 5. Find the video file (yt-dlp may output a different extension than .mp4)
