@@ -20,12 +20,13 @@ const (
 type Job struct {
 	ID        string    `json:"id"`
 	URL       string    `json:"url"`
+	Quality   string    `json:"quality"`
 	Status    Status    `json:"status"`
 	Error     string    `json:"error,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-type ArchiveFunc func(ctx context.Context, url string) error
+type ArchiveFunc func(ctx context.Context, url string, quality string) error
 
 type Queue struct {
 	mu      sync.Mutex
@@ -42,7 +43,7 @@ func New(archiveFn ArchiveFunc) *Queue {
 	return q
 }
 
-func (q *Queue) Enqueue(url string) *Job {
+func (q *Queue) Enqueue(url string, quality string) *Job {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
@@ -50,6 +51,7 @@ func (q *Queue) Enqueue(url string) *Job {
 	job := &Job{
 		ID:        fmt.Sprintf("%d", q.nextID),
 		URL:       url,
+		Quality:   quality,
 		Status:    StatusPending,
 		CreatedAt: time.Now(),
 	}
@@ -105,7 +107,7 @@ func (q *Queue) worker() {
 		q.setStatus(job.ID, StatusProcessing, "")
 		log.Printf("queue: processing %s (%s)", job.ID, job.URL)
 
-		err := q.archive(context.Background(), job.URL)
+		err := q.archive(context.Background(), job.URL, job.Quality)
 		if err != nil {
 			log.Printf("queue: error for %s: %v", job.ID, err)
 			q.setStatus(job.ID, StatusError, err.Error())

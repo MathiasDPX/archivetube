@@ -194,6 +194,7 @@ func (h *handlers) handleArchiveSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	url := r.FormValue("url")
+	quality := r.FormValue("quality")
 	if url == "" {
 		h.renderWithRequest(w, r, "archive.tmpl", ArchiveData{
 			Error: "Please provide a URL.",
@@ -202,7 +203,7 @@ func (h *handlers) handleArchiveSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.queue.Enqueue(url)
+	h.queue.Enqueue(url, quality)
 	http.Redirect(w, r, "/archive", http.StatusSeeOther)
 }
 
@@ -306,7 +307,8 @@ func (h *handlers) handlePlaylistFetch(w http.ResponseWriter, r *http.Request) {
 
 func (h *handlers) handleArchiveBatch(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		URLs []string `json:"urls"`
+		URLs    []string `json:"urls"`
+		Quality string   `json:"quality"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
@@ -315,7 +317,7 @@ func (h *handlers) handleArchiveBatch(w http.ResponseWriter, r *http.Request) {
 
 	for _, url := range body.URLs {
 		if url != "" {
-			h.queue.Enqueue(url)
+			h.queue.Enqueue(url, body.Quality)
 		}
 	}
 

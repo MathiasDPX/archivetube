@@ -75,8 +75,29 @@ func extractVideoID(rawURL string) (string, error) {
 	return "", fmt.Errorf("could not extract YouTube video ID from %q", rawURL)
 }
 
+// qualityToFormat converts a quality choice to a yt-dlp -f format string.
+// If the requested resolution isn't available, yt-dlp will pick the closest one.
+func qualityToFormat(quality string) string {
+	switch quality {
+	case "360":
+		return "bv*[height<=360]+ba/bv*[height<=360]/b[height<=360]/bv*+ba/b"
+	case "480":
+		return "bv*[height<=480]+ba/bv*[height<=480]/b[height<=480]/bv*+ba/b"
+	case "720":
+		return "bv*[height<=720]+ba/bv*[height<=720]/b[height<=720]/bv*+ba/b"
+	case "1080":
+		return "bv*[height<=1080]+ba/bv*[height<=1080]/b[height<=1080]/bv*+ba/b"
+	case "1440":
+		return "bv*[height<=1440]+ba/bv*[height<=1440]/b[height<=1440]/bv*+ba/b"
+	case "2160":
+		return "bv*[height<=2160]+ba/bv*[height<=2160]/b[height<=2160]/bv*+ba/b"
+	default: // "best" or empty
+		return "bv*[ext=mp4]+ba[ext=m4a]/bv*+ba/b"
+	}
+}
+
 // ArchiveURL downloads a video and stores its metadata.
-func (s *Service) ArchiveURL(ctx context.Context, url string) error {
+func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) error {
 	// 0. Quick check: is this video already archived?
 	ytID, err := extractVideoID(url)
 	if err != nil {
@@ -115,7 +136,7 @@ func (s *Service) ArchiveURL(ctx context.Context, url string) error {
 		"--sub-format", "vtt/best",
 		"--sub-langs", "all",
 		"--no-write-comments",
-		"-f", "bv*[ext=mp4]+ba[ext=m4a]/bv*+ba/b",
+		"-f", qualityToFormat(quality),
 		"--merge-output-format", "mp4",
 		"--remote-components", "ejs:npm",
 	}
