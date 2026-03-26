@@ -1,5 +1,6 @@
 (function () {
     var urlInput = document.getElementById("url");
+    var qualitySelect = document.getElementById("quality");
     var form = document.getElementById("archive-form");
     var smartBtn = document.getElementById("smart-btn");
     var btnLabel = document.getElementById("smart-btn-label");
@@ -167,7 +168,7 @@
         fetch("/archive/batch", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ urls: urls })
+            body: JSON.stringify({ urls: urls, quality: qualitySelect ? qualitySelect.value : "" })
         })
             .then(function () {
                 picker.style.display = "none";
