@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 
@@ -277,6 +278,42 @@ func (h *handlers) handleAPICreatorVideos(w http.ResponseWriter, r *http.Request
 		"total":   total,
 		"perPage": perPage,
 	})
+}
+
+func (h *handlers) handleDeleteVideo(w http.ResponseWriter, r *http.Request) {
+	ytID := r.PathValue("id")
+
+	video, err := h.store.GetVideoByYoutubeID(ytID)
+	if err != nil {
+		h.serverError(w, err)
+		return
+	}
+	if video == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	// Remove files from disk
+	for _, rel := range []string{video.VideoRelPath, video.ThumbnailRelPath, video.InfoJSONRelPath} {
+		if rel != "" {
+			os.Remove(filepath.Join(h.config.DataDir, rel))
+		}
+	}
+
+	// Remove subtitle files
+	subtitles, _ := h.store.GetSubtitles(video.ID)
+	for _, sub := range subtitles {
+		if sub.RelPath != "" {
+			os.Remove(filepath.Join(h.config.DataDir, sub.RelPath))
+		}
+	}
+
+	if err := h.store.DeleteVideo(video.ID); err != nil {
+		h.serverError(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (h *handlers) handleQueueClear(w http.ResponseWriter, r *http.Request) {
