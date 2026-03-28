@@ -308,9 +308,17 @@ func (h *handlers) handleDeleteVideo(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	channelID := video.ChannelID
+
 	if err := h.store.DeleteVideo(video.ID); err != nil {
 		h.serverError(w, err)
 		return
+	}
+
+	// Delete channel if it has no remaining videos
+	count, err := h.store.CountVideosByChannel(channelID)
+	if err == nil && count == 0 {
+		h.store.DeleteChannel(channelID)
 	}
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)

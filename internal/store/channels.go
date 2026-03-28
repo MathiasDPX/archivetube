@@ -47,6 +47,17 @@ func (s *Store) GetChannelByYoutubeID(ytID string) (*domain.Channel, error) {
 	return ch, nil
 }
 
+func (s *Store) CountVideosByChannel(channelID int64) (int, error) {
+	var count int
+	err := s.db.QueryRow("SELECT COUNT(*) FROM videos WHERE channel_id = ?", channelID).Scan(&count)
+	return count, err
+}
+
+func (s *Store) DeleteChannel(id int64) error {
+	_, err := s.db.Exec("DELETE FROM channels WHERE id = ?", id)
+	return err
+}
+
 func (s *Store) ListChannels() ([]domain.Channel, error) {
 	rows, err := s.db.Query(`
 		SELECT id, youtube_channel_id, handle, name, url, description, thumbnail_path, banner_path, created_at, updated_at
