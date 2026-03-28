@@ -24,6 +24,7 @@ var funcMap = template.FuncMap{
 	"linkify":     linkify,
 	"webPath":     webPath,
 	"loggedIn":    func() bool { return false },
+	"authEnabled": func() bool { return true },
 }
 
 func fmtDuration(seconds int) string {
@@ -114,7 +115,7 @@ func NewTemplates(templateDir string) (*Templates, error) {
 }
 
 // Render executes the named page template, which should invoke the "base" template.
-func (t *Templates) Render(w http.ResponseWriter, name string, data any, loggedIn bool) error {
+func (t *Templates) Render(w http.ResponseWriter, name string, data any, loggedIn, authEnabled bool) error {
 	tmpl, ok := t.templates[name]
 	if !ok {
 		return fmt.Errorf("template %q not found", name)
@@ -125,7 +126,8 @@ func (t *Templates) Render(w http.ResponseWriter, name string, data any, loggedI
 		return fmt.Errorf("cloning template %s: %w", name, err)
 	}
 	clone.Funcs(template.FuncMap{
-		"loggedIn": func() bool { return loggedIn },
+		"loggedIn":    func() bool { return loggedIn },
+		"authEnabled": func() bool { return authEnabled },
 	})
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	return clone.ExecuteTemplate(w, "base", data)
