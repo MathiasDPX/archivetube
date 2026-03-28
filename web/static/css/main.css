@@ -58,6 +58,11 @@ a { color: inherit; text-decoration: none; }
 }
 .logo:hover { opacity: 0.85; }
 
+.logo img {
+    height: 2em;
+    width: auto;
+}
+
 .topbar-search {
     flex: 1;
     display: flex;
