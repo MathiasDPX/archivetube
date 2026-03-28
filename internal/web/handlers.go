@@ -32,9 +32,9 @@ type HomeData struct {
 }
 
 type VideoData struct {
-	Video    *domain.Video
-	Channel  *domain.Channel
-	Chapters []domain.Chapter
+	Video     *domain.Video
+	Channel   *domain.Channel
+	Chapters  []domain.Chapter
 	Subtitles []domain.Subtitle
 }
 
@@ -111,9 +111,9 @@ func (h *handlers) handleVideo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.renderWithRequest(w, r, "video.tmpl", VideoData{
-		Video:    video,
-		Channel:  channel,
-		Chapters: chapters,
+		Video:     video,
+		Channel:   channel,
+		Chapters:  chapters,
 		Subtitles: subtitles,
 	})
 }
@@ -326,7 +326,7 @@ func (h *handlers) handleArchiveBatch(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) renderWithRequest(w http.ResponseWriter, r *http.Request, name string, data any) {
-	if err := h.tmpl.Render(w, name, data, isLoggedIn(r)); err != nil {
+	if err := h.tmpl.Render(w, name, data, isLoggedIn(r), h.config.PasswordHash != ""); err != nil {
 		log.Printf("render error: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}

@@ -22,7 +22,7 @@
             <nav class="nav-links">
                 <a href="/">Home</a>
                 <a href="/creators">Creators</a>
-                {{if loggedIn}}
+                {{if or (not authEnabled) (loggedIn)}}
                 <a href="/archive">Archive</a>
                 {{else}}
                 <a href="/login">Login</a>
