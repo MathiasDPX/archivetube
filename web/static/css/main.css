@@ -582,6 +582,8 @@ a { color: inherit; text-decoration: none; }
     font-size: 0.85rem;
     font-weight: 500;
     color: var(--text);
+    border: 2px solid transparent;
+    cursor: pointer;
     transition: background 0.15s;
 }
 .action-btn:hover { background: var(--bg-hover); }
