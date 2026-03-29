@@ -388,6 +388,7 @@ func findDownloadedVideo(dir string) (string, error) {
 		return "", fmt.Errorf("reading temp dir %s: %w", dir, err)
 	}
 
+	var fallback string
 	for _, e := range entries {
 		if e.IsDir() {
 			continue
@@ -396,10 +397,19 @@ func findDownloadedVideo(dir string) (string, error) {
 		if nonVideoExts[ext] {
 			continue
 		}
-		stem := strings.TrimSuffix(e.Name(), filepath.Ext(e.Name()))
+		name := e.Name()
+		stem := strings.TrimSuffix(name, filepath.Ext(name))
 		if stem == "video" {
-			return filepath.Join(dir, e.Name()), nil
+			return filepath.Join(dir, name), nil
 		}
+		// On Windows, yt-dlp may leave format-specific files (e.g. "video.f137.mp4")
+		// when merging fails. Accept them as a fallback.
+		if fallback == "" && strings.HasPrefix(stem, "video") {
+			fallback = filepath.Join(dir, name)
+		}
+	}
+	if fallback != "" {
+		return fallback, nil
 	}
 	return "", fmt.Errorf("no video file found in %s", dir)
 }
