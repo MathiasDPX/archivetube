@@ -40,8 +40,9 @@ type VideoData struct {
 }
 
 type ArchiveData struct {
-	Error string
-	Jobs  []queue.Job
+	Error        string
+	Jobs         []queue.Job
+	PrefilledURL string
 }
 
 type CreatorsData struct {
@@ -54,6 +55,11 @@ type CreatorData struct {
 	Page    int
 	Total   int
 	PerPage int
+}
+
+type NotFoundData struct {
+	Kind string
+	URL  string
 }
 
 func (h *handlers) handleHome(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +95,11 @@ func (h *handlers) handleVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if video == nil {
-		http.NotFound(w, r)
+		w.WriteHeader(http.StatusNotFound)
+		h.renderWithRequest(w, r, "notfound.tmpl", NotFoundData{
+			Kind: "video",
+			URL:  "https://www.youtube.com/watch?v=" + ytID,
+		})
 		return
 	}
 
@@ -138,7 +148,11 @@ func (h *handlers) handleCreator(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if channel == nil {
-		http.NotFound(w, r)
+		w.WriteHeader(http.StatusNotFound)
+		h.renderWithRequest(w, r, "notfound.tmpl", NotFoundData{
+			Kind: "author",
+			URL:  "https://www.youtube.com/channel/" + ytID,
+		})
 		return
 	}
 
@@ -185,7 +199,10 @@ func (h *handlers) handleDownload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) handleArchivePage(w http.ResponseWriter, r *http.Request) {
-	h.renderWithRequest(w, r, "archive.tmpl", ArchiveData{Jobs: h.queue.Jobs()})
+	h.renderWithRequest(w, r, "archive.tmpl", ArchiveData{
+		Jobs:         h.queue.Jobs(),
+		PrefilledURL: r.URL.Query().Get("url"),
+	})
 }
 
 func (h *handlers) handleArchiveSubmit(w http.ResponseWriter, r *http.Request) {
