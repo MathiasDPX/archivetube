@@ -1,0 +1,7 @@
+{{define "title"}}Not Found - ArchiveTube{{end}}
+{{define "content"}}
+<div class="page-narrow" style="text-align:center;padding-top:120px;">
+    <h1 class="page-heading">This {{.Kind}} isn't archived yet</h1>
+    <p class="page-sub">It looks like this {{.Kind}} hasn't been archived.<br><a class="link-subtle" href="/archive?url={{.URL}}">Archive it →</a></p>
+</div>
+{{end}}

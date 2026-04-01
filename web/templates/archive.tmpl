@@ -11,7 +11,7 @@
     <form method="post" action="/archive" class="archive-form" id="archive-form">
         <label for="url" class="form-label">URL</label>
         <div class="archive-url-row">
-            <input type="url" id="url" name="url" placeholder="https://www.youtube.com/watch?v=..." class="form-input" required autofocus>
+            <input type="url" id="url" name="url" placeholder="https://www.youtube.com/watch?v=..." class="form-input" required autofocus {{if .PrefilledURL}}value="{{.PrefilledURL}}"{{end}}>
             <select name="quality" id="quality" class="form-select">
                 <option value="best">Best</option>
                 <option value="2160">2160p (4K)</option>
