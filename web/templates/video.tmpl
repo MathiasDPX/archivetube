@@ -2,7 +2,7 @@
 {{define "content"}}
 <div class="watch-page">
     <div class="player-wrap">
-        <video id="video-player" controls preload="metadata">
+        <video id="video-player" controls preload="metadata" data-channel-id="{{.Channel.YoutubeChannelID}}" data-video-id="{{.Video.YoutubeVideoID}}">
             <source src="/data/{{webPath .Video.VideoRelPath}}" type="video/mp4">
             {{range .Subtitles}}
             <track kind="subtitles" src="/data/{{webPath .RelPath}}" srclang="{{.LanguageCode}}" label="{{if .LanguageName}}{{.LanguageName}}{{else}}{{.LanguageCode}}{{end}}">
@@ -11,12 +11,12 @@
     </div>
 
     <div class="watch-below">
-        <h1 class="watch-title">{{.Video.Title}}</h1>
+        <h1 class="watch-title" id="video-title">{{.Video.Title}}</h1>
 
         <div class="watch-bar">
             <a href="/creators/{{.Channel.YoutubeChannelID}}" class="watch-channel">
-                {{if .Channel.ThumbnailPath}}<img src="/data/{{webPath .Channel.ThumbnailPath}}" alt="" class="avatar avatar-channel">{{end}}
-                <span>{{.Channel.Name}}</span>
+                {{if .Channel.ThumbnailPath}}<img src="/data/{{webPath .Channel.ThumbnailPath}}" alt="" id="channel-avatar" class="avatar avatar-channel">{{end}}
+                <span id="channel-name">{{.Channel.Name}}</span>
             </a>
             <div class="watch-actions">
                 <a href="/download/{{.Video.YoutubeVideoID}}" class="action-btn">
