@@ -415,9 +415,9 @@ func (s *Service) fetchChannelImages(ctx context.Context, channelDir, channelURL
 	}
 	defer os.RemoveAll(tmpDir)
 
-	outTmpl := filepath.Join(tmpDir, "channel.%(ext)s")
+	outTmpl := filepath.Join(tmpDir, "%(thumbnail_id)s.%(ext)s")
 	args := []string{
-		"--write-thumbnail",
+		"--write-all-thumbnails",
 		"--skip-download",
 		"--playlist-items", "0",
 		"-o", outTmpl,
@@ -436,22 +436,8 @@ func (s *Service) fetchChannelImages(ctx context.Context, channelDir, channelURL
 	cmd := exec.CommandContext(ctx, s.YtDlpPath, args...)
 	cmd.CombinedOutput()
 
-	if avatarRel == "" {
-		for _, ext := range []string{"jpg", "png", "webp"} {
-			src := filepath.Join(tmpDir, "channel."+ext)
-			if _, err := os.Stat(src); err == nil {
-				dst := filepath.Join(channelDir, "avatar."+ext)
-				if moveFile(src, dst) == nil {
-					avatarRel, _ = filepath.Rel(s.DataDir, dst)
-					avatarRel = filepath.ToSlash(avatarRel)
-				}
-				break
-			}
-		}
-	}
-
+	entries, _ := os.ReadDir(tmpDir)
 	if bannerRel == "" {
-		entries, _ := os.ReadDir(tmpDir)
 		for _, e := range entries {
 			if strings.Contains(e.Name(), "banner") {
 				src := filepath.Join(tmpDir, e.Name())
@@ -460,6 +446,21 @@ func (s *Service) fetchChannelImages(ctx context.Context, channelDir, channelURL
 				if moveFile(src, dst) == nil {
 					bannerRel, _ = filepath.Rel(s.DataDir, dst)
 					bannerRel = filepath.ToSlash(bannerRel)
+				}
+				break
+			}
+		}
+	}
+
+	if avatarRel == "" {
+		for _, e := range entries {
+			if strings.Contains(e.Name(), "avatar") {
+				src := filepath.Join(tmpDir, e.Name())
+				ext := filepath.Ext(e.Name())
+				dst := filepath.Join(channelDir, "avatar"+ext)
+				if moveFile(src, dst) == nil {
+					avatarRel, _ = filepath.Rel(s.DataDir, dst)
+					avatarRel = filepath.ToSlash(avatarRel)
 				}
 				break
 			}

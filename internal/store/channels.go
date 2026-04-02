@@ -15,8 +15,8 @@ func (s *Store) UpsertChannel(ch *domain.Channel) (int64, error) {
 			name           = excluded.name,
 			url            = excluded.url,
 			description    = excluded.description,
-			thumbnail_path = excluded.thumbnail_path,
-			banner_path    = excluded.banner_path,
+			thumbnail_path = CASE WHEN excluded.thumbnail_path != '' THEN excluded.thumbnail_path ELSE channels.thumbnail_path END,
+			banner_path    = CASE WHEN excluded.banner_path != '' THEN excluded.banner_path ELSE channels.banner_path END,
 			updated_at     = CURRENT_TIMESTAMP`,
 		ch.YoutubeChannelID, ch.Handle, ch.Name, ch.URL, ch.Description, ch.ThumbnailPath, ch.BannerPath,
 	)
