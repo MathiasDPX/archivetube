@@ -470,6 +470,65 @@ func (s *Service) fetchChannelImages(ctx context.Context, channelDir, channelURL
 	return avatarRel, bannerRel
 }
 
+func (s *Service) RefreshChannelMetadata(ctx context.Context, ch *domain.Channel) error {
+	channelDir := filepath.Join(s.DataDir, "media", "channels", ch.YoutubeChannelID)
+	if err := os.MkdirAll(channelDir, 0o755); err != nil {
+		return fmt.Errorf("creating channel dir: %w", err)
+	}
+
+	for _, prefix := range []string{"avatar", "banner"} {
+		for _, ext := range []string{"jpg", "png", "webp"} {
+			os.Remove(filepath.Join(channelDir, prefix+"."+ext))
+		}
+	}
+
+	channelURL := ch.URL
+	if channelURL == "" {
+		channelURL = "https://www.youtube.com/channel/" + ch.YoutubeChannelID
+	}
+
+	avatarRel, bannerRel := s.fetchChannelImages(ctx, channelDir, channelURL)
+
+	args := []string{
+		"--dump-json",
+		"--playlist-items", "0",
+		"--no-warnings",
+	}
+	if s.Proxy != "" {
+		args = append(args, "--proxy", s.Proxy)
+	}
+	cookiePath := "/app/cookies.txt"
+	if _, err := os.Stat(cookiePath); err == nil {
+		args = append(args, "--cookies", cookiePath)
+	}
+	args = append(args, channelURL)
+
+	cmd := exec.CommandContext(ctx, s.YtDlpPath, args...)
+	output, _ := cmd.Output()
+	if len(output) > 0 {
+		var info struct {
+			Channel    string `json:"channel"`
+			ChannelID  string `json:"channel_id"`
+			Uploader   string `json:"uploader"`
+			UploaderID string `json:"uploader_id"`
+		}
+		if err := json.Unmarshal(output, &info); err == nil {
+			if info.Channel != "" {
+				ch.Name = info.Channel
+			}
+			if info.UploaderID != "" && strings.HasPrefix(info.UploaderID, "@") {
+				ch.Handle = info.UploaderID
+			}
+		}
+	}
+
+	ch.ThumbnailPath = avatarRel
+	ch.BannerPath = bannerRel
+
+	_, err := s.Store.UpsertChannel(ch)
+	return err
+}
+
 func findExistingImage(dataDir, dir, prefix string) string {
 	for _, ext := range []string{"jpg", "png", "webp"} {
 		p := filepath.Join(dir, prefix+"."+ext)

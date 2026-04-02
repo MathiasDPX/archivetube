@@ -58,6 +58,11 @@ func (s *Store) DeleteChannel(id int64) error {
 	return err
 }
 
+func (s *Store) ClearChannelImages(id int64) error {
+	_, err := s.db.Exec("UPDATE channels SET thumbnail_path = '', banner_path = '', updated_at = CURRENT_TIMESTAMP WHERE id = ?", id)
+	return err
+}
+
 func (s *Store) ListChannels() ([]domain.Channel, error) {
 	rows, err := s.db.Query(`
 		SELECT id, youtube_channel_id, handle, name, url, description, thumbnail_path, banner_path, created_at, updated_at

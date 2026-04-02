@@ -10,11 +10,34 @@
         <div class="creator-profile">
             {{if .Channel.ThumbnailPath}}<img src="/data/{{webPath .Channel.ThumbnailPath}}" alt="" class="avatar avatar-lg">{{end}}
             <div>
-                <h1 class="page-heading">{{.Channel.Name}}</h1>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <h1 class="page-heading" style="margin:0;">{{.Channel.Name}}</h1>
+                    {{if or (not authEnabled) (loggedIn)}}
+                    <div class="dropdown">
+                        <button type="button" class="threedots-btn dropdown-toggle" aria-label="Options">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                        </button>
+                        <div class="dropdown-menu">
+                            <form method="post" action="/creators/{{.Channel.YoutubeChannelID}}/refresh">
+                                <button type="submit" class="dropdown-item">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                                    Refresh metadata
+                                </button>
+                            </form>
+                            <form method="post" action="/creators/{{.Channel.YoutubeChannelID}}/delete" onsubmit="return confirm('Are you sure you want to delete the channel avatar and banner?')">
+                                <button type="submit" class="dropdown-item dropdown-item-danger">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                                    Delete creator
+                                </button>
+                            </form>
+                            <span class="dropdown-item">{{.Total}} video{{if ne .Total 1}}s{{end}} archived</span>
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
                 {{if .Channel.Handle}}<p class="creator-handle">{{.Channel.Handle}}</p>{{end}}
             </div>
         </div>
-        <p class="card-meta">{{.Total}} video{{if ne .Total 1}}s{{end}} archived</p>
     </div>
 
     {{if .Videos}}
@@ -43,4 +66,17 @@
 {{end}}
 {{define "scripts"}}
 <script src="/static/js/infinite-scroll.js"></script>
+<script>
+document.querySelectorAll('.dropdown-toggle').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        btn.closest('.dropdown').classList.toggle('open');
+    });
+});
+document.addEventListener('click', function() {
+    document.querySelectorAll('.dropdown.open').forEach(function(d) {
+        d.classList.remove('open');
+    });
+});
+</script>
 {{end}}

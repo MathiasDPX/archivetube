@@ -40,6 +40,8 @@ func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service,
 	mux.HandleFunc("GET /creators/{id}", h.handleCreator)
 	mux.HandleFunc("GET /download/{id}", h.handleDownload)
 	mux.HandleFunc("POST /videos/{id}/delete", h.requireAuth(h.handleDeleteVideo))
+	mux.HandleFunc("POST /creators/{id}/delete", h.requireAuth(h.handleDeleteCreator))
+	mux.HandleFunc("POST /creators/{id}/refresh", h.requireAuth(h.handleRefreshCreator))
 	mux.HandleFunc("GET /archive", h.requireAuth(h.handleArchivePage))
 	mux.HandleFunc("POST /archive", h.requireAuth(h.handleArchiveSubmit))
 	mux.HandleFunc("GET /api/videos", h.handleAPIVideos)
