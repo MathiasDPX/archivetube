@@ -310,14 +310,12 @@ func (h *handlers) handleDeleteVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Remove files from disk
 	for _, rel := range []string{video.VideoRelPath, video.ThumbnailRelPath, video.InfoJSONRelPath} {
 		if rel != "" {
 			os.Remove(filepath.Join(h.config.DataDir, rel))
 		}
 	}
 
-	// Remove subtitle files
 	subtitles, _ := h.store.GetSubtitles(video.ID)
 	for _, sub := range subtitles {
 		if sub.RelPath != "" {
@@ -332,7 +330,6 @@ func (h *handlers) handleDeleteVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Delete channel if it has no remaining videos
 	count, err := h.store.CountVideosByChannel(channelID)
 	if err == nil && count == 0 {
 		h.store.DeleteChannel(channelID)

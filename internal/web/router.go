@@ -22,18 +22,18 @@ func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service,
 		tmpl:    tmpl,
 	}
 
-	// Static files (CSS, JS)
+	// static files
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
 
-	// Media/data files served from DataDir
+	// data files served from DataDir
 	mux.Handle("GET /data/", http.StripPrefix("/data/", http.FileServer(http.Dir(cfg.DataDir))))
 
-	// Auth
+	// auth
 	mux.HandleFunc("GET /login", h.handleLoginPage)
 	mux.HandleFunc("POST /login", h.handleLoginSubmit)
 	mux.HandleFunc("POST /logout", h.handleLogout)
 
-	// Pages
+	// pages
 	mux.HandleFunc("GET /{$}", h.handleHome)
 	mux.HandleFunc("GET /videos/{id}", h.handleVideo)
 	mux.HandleFunc("GET /creators", h.handleCreators)
@@ -52,20 +52,17 @@ func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service,
 	return logRequests(mux)
 }
 
-// logRequests is a simple logging middleware.
 func logRequests(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		next.ServeHTTP(w, r)
 	})
 }
 
-// WebPaths holds the filesystem paths for web assets, resolved from the project root.
 type WebPaths struct {
 	TemplateDir string
 	StaticDir   string
 }
 
-// DefaultWebPaths returns web asset paths relative to the working directory.
 func DefaultWebPaths() WebPaths {
 	return WebPaths{
 		TemplateDir: filepath.Join("web", "templates"),

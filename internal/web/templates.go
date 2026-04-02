@@ -85,12 +85,10 @@ func webPath(p string) string {
 	return strings.TrimLeft(p, "/")
 }
 
-// Templates holds pre-parsed page templates.
 type Templates struct {
 	templates map[string]*template.Template
 }
 
-// NewTemplates parses all page templates from templateDir, each combined with base.tmpl.
 func NewTemplates(templateDir string) (*Templates, error) {
 	basePath := filepath.Join(templateDir, "base.tmpl")
 
@@ -114,13 +112,12 @@ func NewTemplates(templateDir string) (*Templates, error) {
 	return t, nil
 }
 
-// Render executes the named page template, which should invoke the "base" template.
 func (t *Templates) Render(w http.ResponseWriter, name string, data any, loggedIn, authEnabled bool) error {
 	tmpl, ok := t.templates[name]
 	if !ok {
 		return fmt.Errorf("template %q not found", name)
 	}
-	// Clone so we can override loggedIn per-request without races.
+
 	clone, err := tmpl.Clone()
 	if err != nil {
 		return fmt.Errorf("cloning template %s: %w", name, err)
