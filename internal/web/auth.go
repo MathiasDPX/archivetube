@@ -69,8 +69,7 @@ func (h *handlers) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// requireAuthAPI is middleware that returns 401 for unauthenticated API requests.
-// If no password is configured, all requests are allowed through.
+// middleware for unauthenticated requests
 func (h *handlers) requireAuthAPI(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if h.config.PasswordHash == "" {

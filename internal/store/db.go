@@ -89,7 +89,6 @@ func New(dbPath string) (*Store, error) {
 		return nil, err
 	}
 
-	// Add banner_path column if missing (existing databases)
 	db.Exec("ALTER TABLE channels ADD COLUMN banner_path TEXT NOT NULL DEFAULT ''")
 
 	return &Store{db: db}, nil

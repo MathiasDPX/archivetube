@@ -35,12 +35,9 @@ func New(ytdlpPath, dataDir, proxy string, st *store.Store) *Service {
 	}
 }
 
-// ytVideoIDRe matches an 11-character YouTube video ID.
+// matches a 11-character video ID
 var ytVideoIDRe = regexp.MustCompile(`^[A-Za-z0-9_-]{11}$`)
 
-// extractVideoID parses the YouTube video ID from a URL without making any network request.
-// Supported formats: youtube.com/watch?v=ID, youtu.be/ID, youtube.com/shorts/ID,
-// youtube.com/embed/ID, youtube.com/v/ID, youtube.com/live/ID.
 func extractVideoID(rawURL string) (string, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
@@ -75,8 +72,6 @@ func extractVideoID(rawURL string) (string, error) {
 	return "", fmt.Errorf("could not extract YouTube video ID from %q", rawURL)
 }
 
-// qualityToFormat converts a quality choice to a yt-dlp -f format string.
-// If the requested resolution isn't available, yt-dlp will pick the closest one.
 func qualityToFormat(quality string) string {
 	switch quality {
 	case "360":
@@ -91,14 +86,12 @@ func qualityToFormat(quality string) string {
 		return "bv*[height<=1440]+ba/bv*[height<=1440]/b[height<=1440]/bv*+ba/b"
 	case "2160":
 		return "bv*[height<=2160]+ba/bv*[height<=2160]/b[height<=2160]/bv*+ba/b"
-	default: // "best" or empty
+	default: // best or empty
 		return "bv*[ext=mp4]+ba[ext=m4a]/bv*+ba/b"
 	}
 }
 
-// ArchiveURL downloads a video and stores its metadata.
 func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) error {
-	// 0. Quick check: is this video already archived?
 	ytID, err := extractVideoID(url)
 	if err != nil {
 		return fmt.Errorf("extracting video ID: %w", err)
@@ -111,7 +104,6 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 		return fmt.Errorf("video %s is already archived", ytID)
 	}
 
-	// 1. Create temp work dir
 	tmpBase := TmpDir(s.DataDir)
 	tmpDir, err := os.MkdirTemp(tmpBase, "dl-*")
 	if err != nil {
@@ -125,7 +117,7 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 	}
 	defer os.RemoveAll(tmpDir)
 
-	// 2. Build yt-dlp command
+	// build yt-dlp command
 	outputTemplate := filepath.Join(tmpDir, "video.%(ext)s")
 	args := []string{
 		"-o", outputTemplate,
@@ -145,7 +137,6 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 		args = append(args, "--proxy", s.Proxy)
 	}
 
-	// Add cookies if file exists
 	cookiePath := "/app/cookies.txt"
 	if _, err := os.Stat(cookiePath); err == nil {
 		args = append(args, "--cookies", cookiePath)
@@ -153,33 +144,28 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 
 	args = append(args, url)
 
-	// 3. Run the command
 	cmd := exec.CommandContext(ctx, s.YtDlpPath, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("yt-dlp failed: %w\n%s", err, string(output))
 	}
 
-	// 4. Parse info.json
 	infoPath := filepath.Join(tmpDir, "video.info.json")
 	info, err := parseInfoJSON(infoPath)
 	if err != nil {
 		return fmt.Errorf("parsing info json: %w", err)
 	}
 
-	// 5. Find the video file (yt-dlp may output a different extension than .mp4)
 	videoFile, err := findDownloadedVideo(tmpDir)
 	if err != nil {
 		return fmt.Errorf("locating downloaded video in %s: %w", tmpDir, err)
 	}
 
-	// 6. Find subtitle files (video.*.vtt)
 	subtitleFiles, err := filepath.Glob(filepath.Join(tmpDir, "video.*.vtt"))
 	if err != nil {
 		return fmt.Errorf("finding subtitle files: %w", err)
 	}
 
-	// 7. Find thumbnail file
 	var thumbnailFile string
 	for _, ext := range []string{"jpg", "png", "webp"} {
 		candidate := filepath.Join(tmpDir, "video."+ext)
@@ -189,20 +175,17 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 		}
 	}
 
-	// 8. Determine final media dir
 	finalDir := MediaDir(s.DataDir, info.ChannelID, info.ID)
 	if err := os.MkdirAll(finalDir, 0o755); err != nil {
 		return fmt.Errorf("creating media dir %s: %w", finalDir, err)
 	}
 
-	// 9. Move files to final dir
 	videoExt := strings.TrimPrefix(filepath.Ext(videoFile), ".")
 	finalVideoPath := filepath.Join(finalDir, "video."+videoExt)
 	if err := moveFile(videoFile, finalVideoPath); err != nil {
 		return fmt.Errorf("moving video file: %w", err)
 	}
 
-	// Move info.json
 	finalInfoPath := filepath.Join(finalDir, "video.info.json")
 	if err := moveFile(infoPath, finalInfoPath); err != nil {
 		return fmt.Errorf("moving info json: %w", err)
@@ -239,7 +222,6 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 		subtitles = append(subtitles, subtitleEntry{language: lang, relPath: rel})
 	}
 
-	// Compute relative video path and file size
 	videoRel, _ := filepath.Rel(s.DataDir, finalVideoPath)
 	videoRel = filepath.ToSlash(videoRel)
 	var fileSizeBytes int64
@@ -247,13 +229,11 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 		fileSizeBytes = fi.Size()
 	}
 
-	// Parse upload date
 	uploadDate, err := time.Parse("20060102", info.UploadDate)
 	if err != nil {
 		return fmt.Errorf("parsing upload date %q: %w", info.UploadDate, err)
 	}
 
-	// 10. Upsert channel (with avatar + banner)
 	channelDir := filepath.Join(s.DataDir, "media", "channels", info.ChannelID)
 	if err := os.MkdirAll(channelDir, 0o755); err != nil {
 		return fmt.Errorf("creating channel dir: %w", err)
@@ -273,7 +253,6 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 		return fmt.Errorf("upserting channel: %w", err)
 	}
 
-	// 11. Upsert video
 	video := &domain.Video{
 		ChannelID:        channelID,
 		YoutubeVideoID:   info.ID,
@@ -295,7 +274,6 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 		return fmt.Errorf("upserting video: %w", err)
 	}
 
-	// 12. Replace chapters
 	var chapters []domain.Chapter
 	for i, ch := range info.Chapters {
 		chapters = append(chapters, domain.Chapter{
@@ -310,7 +288,6 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 		return fmt.Errorf("replacing chapters: %w", err)
 	}
 
-	// 13. Replace subtitles
 	var domainSubs []domain.Subtitle
 	for _, sub := range subtitles {
 		domainSubs = append(domainSubs, domain.Subtitle{
@@ -327,8 +304,8 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 	return nil
 }
 
-// moveFile attempts an atomic os.Rename; if it fails with EXDEV (cross-device),
-// it falls back to copy + remove so that moves across filesystems (e.g. local → rclone FUSE) work.
+// attempts an atomic os.Rename, if it fails with EXDEV (cross-device)
+// it falls back to copy + remove so that moves across filesystems (e.g. local -> rclone FUSE) work
 func moveFile(src, dst string) error {
 	err := os.Rename(src, dst)
 	if err == nil {
@@ -363,12 +340,9 @@ func moveFile(src, dst string) error {
 	return os.Remove(src)
 }
 
-// findDownloadedVideo scans dir for the video file downloaded by yt-dlp.
-// yt-dlp is invoked with "-o <dir>/video.%(ext)s", so the stem is always "video".
-// The extension depends on the format selected and whether merging occurred.
-// This function returns the full path to the video file, or an error if none is found.
+// scans dir for the video file downloaded by yt-dlp
 func findDownloadedVideo(dir string) (string, error) {
-	// Extensions that are never the video stream itself.
+	// extensions that are never the video stream itself
 	nonVideoExts := map[string]bool{
 		".json": true,
 		".vtt":  true,
@@ -402,8 +376,7 @@ func findDownloadedVideo(dir string) (string, error) {
 		if stem == "video" {
 			return filepath.Join(dir, name), nil
 		}
-		// On Windows, yt-dlp may leave format-specific files (e.g. "video.f137.mp4")
-		// when merging fails. Accept them as a fallback.
+
 		if fallback == "" && strings.HasPrefix(stem, "video") {
 			fallback = filepath.Join(dir, name)
 		}
@@ -414,10 +387,10 @@ func findDownloadedVideo(dir string) (string, error) {
 	return "", fmt.Errorf("no video file found in %s", dir)
 }
 
-// extractSubtitleLang extracts the language code from a subtitle filename.
-// e.g., "video.en.vtt" -> "en", "video.pt-BR.vtt" -> "pt-BR"
+// extracts the language code from a subtitle filename.
+// e.g., "video.en.vtt" -> "en"
 func extractSubtitleLang(filename string) string {
-	name := strings.TrimSuffix(filename, filepath.Ext(filename)) // remove .vtt
+	name := strings.TrimSuffix(filename, filepath.Ext(filename))
 	parts := strings.SplitN(name, ".", 2)
 	if len(parts) == 2 {
 		return parts[1]
@@ -425,21 +398,17 @@ func extractSubtitleLang(filename string) string {
 	return "unknown"
 }
 
-// fetchChannelImages uses yt-dlp to download the channel avatar and banner.
-// It returns (avatarRelPath, bannerRelPath) relative to DataDir.
 func (s *Service) fetchChannelImages(ctx context.Context, channelDir, channelURL string) (string, string) {
 	if channelURL == "" {
 		return "", ""
 	}
 
-	// Check if already downloaded
 	avatarRel := findExistingImage(s.DataDir, channelDir, "avatar")
 	bannerRel := findExistingImage(s.DataDir, channelDir, "banner")
 	if avatarRel != "" && bannerRel != "" {
 		return avatarRel, bannerRel
 	}
 
-	// Use yt-dlp to dump channel info JSON (no download)
 	tmpDir, err := os.MkdirTemp(TmpDir(s.DataDir), "ch-*")
 	if err != nil {
 		return avatarRel, bannerRel
@@ -458,7 +427,6 @@ func (s *Service) fetchChannelImages(ctx context.Context, channelDir, channelURL
 		args = append(args, "--proxy", s.Proxy)
 	}
 
-	// Add cookies if file exists
 	cookiePath := "/app/cookies.txt"
 	if _, err := os.Stat(cookiePath); err == nil {
 		args = append(args, "--cookies", cookiePath)
@@ -468,7 +436,6 @@ func (s *Service) fetchChannelImages(ctx context.Context, channelDir, channelURL
 	cmd := exec.CommandContext(ctx, s.YtDlpPath, args...)
 	cmd.CombinedOutput()
 
-	// yt-dlp writes avatar as channel.jpg/webp and banner as channel.banner_background.jpg/webp
 	if avatarRel == "" {
 		for _, ext := range []string{"jpg", "png", "webp"} {
 			src := filepath.Join(tmpDir, "channel."+ext)
@@ -502,7 +469,6 @@ func (s *Service) fetchChannelImages(ctx context.Context, channelDir, channelURL
 	return avatarRel, bannerRel
 }
 
-// findExistingImage checks if an image with the given prefix already exists in dir.
 func findExistingImage(dataDir, dir, prefix string) string {
 	for _, ext := range []string{"jpg", "png", "webp"} {
 		p := filepath.Join(dir, prefix+"."+ext)
@@ -514,7 +480,6 @@ func findExistingImage(dataDir, dir, prefix string) string {
 	return ""
 }
 
-// PlaylistEntry holds metadata for a single video in a playlist/channel.
 type PlaylistEntry struct {
 	ID          string  `json:"id"`
 	Title       string  `json:"title"`
@@ -525,8 +490,6 @@ type PlaylistEntry struct {
 	IsShort     bool    `json:"is_short"`
 }
 
-// FetchPlaylistEntries uses yt-dlp to list all videos in a playlist or channel
-// without downloading them. It returns metadata for each entry.
 func (s *Service) FetchPlaylistEntries(ctx context.Context, url string) ([]PlaylistEntry, error) {
 	args := []string{
 		"--flat-playlist",
@@ -538,7 +501,6 @@ func (s *Service) FetchPlaylistEntries(ctx context.Context, url string) ([]Playl
 		args = append(args, "--proxy", s.Proxy)
 	}
 
-	// Add cookies if file exists
 	cookiePath := "/app/cookies.txt"
 	if _, err := os.Stat(cookiePath); err == nil {
 		args = append(args, "--cookies", cookiePath)
@@ -558,8 +520,8 @@ func (s *Service) FetchPlaylistEntries(ctx context.Context, url string) ([]Playl
 			continue
 		}
 		var raw struct {
-			ID         string  `json:"id"`
-			Title      string  `json:"title"`
+			ID         string `json:"id"`
+			Title      string `json:"title"`
 			Thumbnails []struct {
 				URL string `json:"url"`
 			} `json:"thumbnails"`

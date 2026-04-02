@@ -32,9 +32,9 @@ type Video struct {
 	FileSizeBytes    int64
 	Width            int
 	Height           int
-	// Joined fields
-	ChannelName          string
-	ChannelYoutubeID     string
+	// joined fields
+	ChannelName      string
+	ChannelYoutubeID string
 }
 
 type Chapter struct {
