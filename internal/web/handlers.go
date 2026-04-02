@@ -338,6 +338,54 @@ func (h *handlers) handleDeleteVideo(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+func (h *handlers) handleDeleteCreator(w http.ResponseWriter, r *http.Request) {
+	ytID := r.PathValue("id")
+
+	channel, err := h.store.GetChannelByYoutubeID(ytID)
+	if err != nil {
+		h.serverError(w, err)
+		return
+	}
+	if channel == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	channelDir := filepath.Join(h.config.DataDir, "media", "channels", channel.YoutubeChannelID)
+	for _, prefix := range []string{"avatar", "banner"} {
+		for _, ext := range []string{"jpg", "png", "webp"} {
+			os.Remove(filepath.Join(channelDir, prefix+"."+ext))
+		}
+	}
+
+	if err := h.store.ClearChannelImages(channel.ID); err != nil {
+		h.serverError(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/creators/"+ytID, http.StatusSeeOther)
+}
+
+func (h *handlers) handleRefreshCreator(w http.ResponseWriter, r *http.Request) {
+	ytID := r.PathValue("id")
+
+	channel, err := h.store.GetChannelByYoutubeID(ytID)
+	if err != nil {
+		h.serverError(w, err)
+		return
+	}
+	if channel == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if err := h.archive.RefreshChannelMetadata(r.Context(), channel); err != nil {
+		log.Printf("refresh creator metadata: %v", err)
+	}
+
+	http.Redirect(w, r, "/creators/"+ytID, http.StatusSeeOther)
+}
+
 func (h *handlers) handleQueueClear(w http.ResponseWriter, r *http.Request) {
 	h.queue.ClearFinished()
 	http.Redirect(w, r, "/archive", http.StatusSeeOther)
