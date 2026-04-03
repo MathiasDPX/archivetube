@@ -19,7 +19,13 @@ data_dir = "./data"
 proxy = ""
 
 [auth]
-password_hash = "bcrypt-password"
+mode = "password" # "password" or "oidc"
+password_hash = "bcrypt-generator"
+
+#oidc_issuer = "https://auth.mathiasd.fr"
+#oidc_client_id = ""
+#oidc_client_secret = ""
+#oidc_redirect_url = ""
 ```
 
 ### Using Docker

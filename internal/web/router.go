@@ -23,6 +23,10 @@ func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service,
 		tmpl:    tmpl,
 	}
 
+	if cfg.Auth.Mode == "oidc" {
+		h.oidc = newOIDCAuth(&cfg.Auth)
+	}
+
 	// static files
 	mux.Handle("GET /static/", http.StripPrefix("/static", neuter(http.FileServer(http.Dir(staticDir)))))
 
@@ -33,6 +37,7 @@ func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service,
 	mux.HandleFunc("GET /login", h.handleLoginPage)
 	mux.HandleFunc("POST /login", h.handleLoginSubmit)
 	mux.HandleFunc("POST /logout", h.handleLogout)
+	mux.HandleFunc("GET /auth/callback", h.handleOIDCCallback)
 
 	// pages
 	mux.HandleFunc("GET /{$}", h.handleHome)

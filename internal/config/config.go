@@ -18,7 +18,14 @@ type ArchiveConfig struct {
 }
 
 type AuthConfig struct {
+	Mode         string `toml:"mode"`
 	PasswordHash string `toml:"password_hash"`
+
+	// OIDC settings (used when mode = "oidc")
+	OIDCIssuer       string `toml:"oidc_issuer"`
+	OIDCClientID     string `toml:"oidc_client_id"`
+	OIDCClientSecret string `toml:"oidc_client_secret"`
+	OIDCRedirectURL  string `toml:"oidc_redirect_url"`
 }
 
 type Config struct {

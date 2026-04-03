@@ -23,6 +23,7 @@ type handlers struct {
 	archive *archive.Service
 	queue   *queue.Queue
 	tmpl    *Templates
+	oidc    *oidcAuth
 }
 
 type HomeData struct {
@@ -434,7 +435,7 @@ func (h *handlers) handleArchiveBatch(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) renderWithRequest(w http.ResponseWriter, r *http.Request, name string, data any) {
-	if err := h.tmpl.render(w, name, data, isLoggedIn(r), h.config.Auth.PasswordHash != "", absoluteRequestURL(r)); err != nil {
+	if err := h.tmpl.render(w, name, data, isLoggedIn(r), h.authEnabled(), absoluteRequestURL(r)); err != nil {
 		log.Printf("render error: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
