@@ -1,4 +1,11 @@
 {{define "title"}}{{.Channel.Name}} - ArchiveTube{{end}}
+
+{{ define "opengraph" }}
+<meta property="og:image" content="/data/{{webPath .Channel.ThumbnailPath}}">
+<meta property="og:title" content="{{ .Channel.Name }} - ArchiveTube">
+<meta property="og:description" content="{{ .Channel.Name}}'s archived videos" />
+{{ end }}
+
 {{define "content"}}
 <div class="page-shell">
     {{if .Channel.BannerPath}}

@@ -1,4 +1,12 @@
 {{define "title"}}{{.Video.Title}} - ArchiveTube{{end}}
+
+{{ define "opengraph" }}
+<meta property="og:image" content="/data/{{ webPath .Video.ThumbnailRelPath }}">
+<meta property="og:title" content="{{ .Video.Title }} - ArchiveTube">
+<meta property="og:description" content="{{ ogDesc .Video.Description }}" />
+<meta name="twitter:card" content="summary_large_image">
+{{ end }}
+
 {{define "content"}}
 <div class="watch-page">
     <div class="player-wrap">

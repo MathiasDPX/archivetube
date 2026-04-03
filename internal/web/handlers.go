@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/MathiasDPX/archivetube/internal/archive"
 	"github.com/MathiasDPX/archivetube/internal/config"
@@ -433,10 +434,30 @@ func (h *handlers) handleArchiveBatch(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) renderWithRequest(w http.ResponseWriter, r *http.Request, name string, data any) {
-	if err := h.tmpl.Render(w, name, data, isLoggedIn(r), h.config.PasswordHash != ""); err != nil {
+	if err := h.tmpl.render(w, name, data, isLoggedIn(r), h.config.PasswordHash != "", absoluteRequestURL(r)); err != nil {
 		log.Printf("render error: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
+}
+
+func absoluteRequestURL(r *http.Request) string {
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	if forwardedProto := strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")); forwardedProto != "" {
+		scheme = strings.Split(forwardedProto, ",")[0]
+	}
+
+	host := strings.TrimSpace(r.Host)
+	if forwardedHost := strings.TrimSpace(r.Header.Get("X-Forwarded-Host")); forwardedHost != "" {
+		host = strings.Split(forwardedHost, ",")[0]
+	}
+
+	if host == "" {
+		return r.URL.RequestURI()
+	}
+	return scheme + "://" + host + r.URL.RequestURI()
 }
 
 func (h *handlers) serverError(w http.ResponseWriter, err error) {
