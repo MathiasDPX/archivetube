@@ -22,7 +22,9 @@ var funcMap = template.FuncMap{
 	"fmtSize":     fmtSize,
 	"ftoi":        func(f float64) int { return int(f) },
 	"linkify":     linkify,
+	"ogDesc":      ogDesc,
 	"webPath":     webPath,
+	"currentURL":  func() string { return "" },
 	"loggedIn":    func() bool { return false },
 	"authEnabled": func() bool { return true },
 }
@@ -67,6 +69,7 @@ func fmtSize(bytes int64) string {
 }
 
 var urlRe = regexp.MustCompile(`(https?://[^\s<>"'` + "`" + `\x00-\x1f]+)`)
+var tagRe = regexp.MustCompile(`<[^>]*>`)
 
 func linkify(text string) template.HTML {
 	escaped := html.EscapeString(text)
@@ -74,6 +77,16 @@ func linkify(text string) template.HTML {
 		return `<a href="` + u + `" target="_blank" rel="noopener">` + u + `</a>`
 	})
 	return template.HTML(result)
+}
+
+func ogDesc(text string) string {
+	charLimit := 150
+	linked := string(linkify(text))
+	plain := html.UnescapeString(tagRe.ReplaceAllString(linked, ""))
+	if len(plain) > charLimit {
+		return plain[:charLimit-3] + "..."
+	}
+	return plain
 }
 
 func webPath(p string) string {
@@ -113,6 +126,10 @@ func NewTemplates(templateDir string) (*Templates, error) {
 }
 
 func (t *Templates) Render(w http.ResponseWriter, name string, data any, loggedIn, authEnabled bool) error {
+	return t.render(w, name, data, loggedIn, authEnabled, "")
+}
+
+func (t *Templates) render(w http.ResponseWriter, name string, data any, loggedIn, authEnabled bool, currentURL string) error {
 	tmpl, ok := t.templates[name]
 	if !ok {
 		return fmt.Errorf("template %q not found", name)
@@ -125,6 +142,7 @@ func (t *Templates) Render(w http.ResponseWriter, name string, data any, loggedI
 	clone.Funcs(template.FuncMap{
 		"loggedIn":    func() bool { return loggedIn },
 		"authEnabled": func() bool { return authEnabled },
+		"currentURL":  func() string { return currentURL },
 	})
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	return clone.ExecuteTemplate(w, "base", data)

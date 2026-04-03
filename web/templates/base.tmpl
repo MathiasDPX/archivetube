@@ -9,6 +9,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css">
+
+    <meta property="og:site_name" content="ArchiveTube" />
+    <meta property="og:type" content="video.other" />
+    <meta property="og:url" content="{{ currentURL }}">
+
+    {{ block "opengraph" .}}
+    <meta property="og:image" content="/static/banner.png">
+    <meta property="og:description" content="Self-hosted YouTube archiving application" />
+    <meta property="og:title" content="ArchiveTube">
+    <meta name="twitter:card" content="summary_large_image">
+    {{ end }}
 </head>
 <body>
     <header class="topbar">
