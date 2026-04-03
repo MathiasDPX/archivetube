@@ -6,18 +6,21 @@ A self-hosted YouTube archiving application
 
 ### Configuration
 
-Env variables:
+Create a `config.toml` file with this inside:
 
-| Variable                   | Default      | Description                    |
-|----------------------------|--------------|--------------------------------|
-| `ARCHIVETUBE_LISTEN`       | `:8080`      | Address to listen on           |
-| `ARCHIVETUBE_DATA_DIR`     | `/app/data`  | Directory for data and media   |
-| `ARCHIVETUBE_YTDLP_PATH`   | `yt-dlp`     | Path or command for yt-dlp     |
-| `ARCHIVETUBE_PROXY`        | None         | Proxy URL for yt-dlp           |
-| `ARCHIVETUBE_PASSWORD`     | None         | bcrypt password for login      |
-| `ARCHIVETUBE_IPHEADER`     | None         | Header with real client IP     |
+```toml
+[server]
+listen_addr = ":8080"
+real_ip_header = ""
 
-Save theses variables inside a `.env` file to save them
+[archive]
+ytdlp_path = "yt-dlp"
+data_dir = "./data"
+proxy = ""
+
+[auth]
+password_hash = "bcrypt-password"
+```
 
 ### Using Docker
 
@@ -26,9 +29,9 @@ docker pull ghcr.io/mathiasdpx/archivetube:latest
 
 docker run -d \
   -p 8080:8080 \
-  -v archivetube-data:/app/data \
+  -v ./data:/app/data \
+  -v ./config.toml:/app/config.toml \
   --name archivetube \
-  --env-file ./.env
   ghcr.io/mathiasdpx/archivetube:latest
 ```
 
@@ -43,8 +46,8 @@ archivetube:
       - "8080:8080"
     volumes:
       - ./data:/app/data
+      - ./config.toml:/app/config.toml
 #     - ./cookies.txt:/app/cookies.txt # For using your account's cookies with yt-dlp - Not recommended
-    env_file: .env
 ```
 
 Then open [http://localhost:8080](http://localhost:8080)

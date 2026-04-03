@@ -61,11 +61,11 @@ func (h *handlers) getRealIp(r *http.Request) string {
 		return r.RemoteAddr
 	}
 
-	if h.config.RealIPHeader == "" {
+	if h.config.Server.RealIPHeader == "" {
 		return host
 	}
 
-	realip := r.Header.Get(h.config.RealIPHeader)
+	realip := r.Header.Get(h.config.Server.RealIPHeader)
 
 	if realip == "" {
 		return host
@@ -78,7 +78,7 @@ func (h *handlers) getRealIp(r *http.Request) string {
 // If no password is configured, all requests are allowed through
 func (h *handlers) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if h.config.PasswordHash == "" {
+		if h.config.Auth.PasswordHash == "" {
 			next(w, r)
 			return
 		}
@@ -93,7 +93,7 @@ func (h *handlers) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 // middleware for unauthenticated requests
 func (h *handlers) requireAuthAPI(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if h.config.PasswordHash == "" {
+		if h.config.Auth.PasswordHash == "" {
 			next(w, r)
 			return
 		}
@@ -106,7 +106,7 @@ func (h *handlers) requireAuthAPI(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func (h *handlers) handleLoginPage(w http.ResponseWriter, r *http.Request) {
-	if h.config.PasswordHash == "" || isLoggedIn(r) {
+	if h.config.Auth.PasswordHash == "" || isLoggedIn(r) {
 		http.Redirect(w, r, "/archive", http.StatusSeeOther)
 		return
 	}
@@ -124,7 +124,7 @@ func (h *handlers) handleLoginSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	password := r.FormValue("password")
-	if err := bcrypt.CompareHashAndPassword([]byte(h.config.PasswordHash), []byte(password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(h.config.Auth.PasswordHash), []byte(password)); err != nil {
 		log.Printf("WARN: failed login attempt from %s", h.getRealIp(r))
 		h.renderWithRequest(w, r, "login.tmpl", LoginData{Error: "Invalid password."})
 		return
