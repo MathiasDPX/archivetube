@@ -11,7 +11,7 @@ import (
 
 const sessionCookieName = "archivetube_session"
 
-// sessionStore holds valid session tokens in memory.
+// store valid session tokens in memory
 var (
 	sessions   = map[string]struct{}{}
 	sessionsMu sync.RWMutex
@@ -44,7 +44,6 @@ func deleteSession(token string) {
 	sessionsMu.Unlock()
 }
 
-// isLoggedIn checks whether the request carries a valid session cookie.
 func isLoggedIn(r *http.Request) bool {
 	c, err := r.Cookie(sessionCookieName)
 	if err != nil {
@@ -53,8 +52,8 @@ func isLoggedIn(r *http.Request) bool {
 	return validSession(c.Value)
 }
 
-// requireAuth is middleware that redirects to /login if not authenticated.
-// If no password is configured, all requests are allowed through.
+// middleware that redirects to /login if not authenticated
+// If no password is configured, all requests are allowed through
 func (h *handlers) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if h.config.PasswordHash == "" {

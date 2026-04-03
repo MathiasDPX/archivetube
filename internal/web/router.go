@@ -3,6 +3,7 @@ package web
 import (
 	"net/http"
 	"path/filepath"
+	"strings"
 
 	"github.com/MathiasDPX/archivetube/internal/archive"
 	"github.com/MathiasDPX/archivetube/internal/config"
@@ -10,7 +11,6 @@ import (
 	"github.com/MathiasDPX/archivetube/internal/store"
 )
 
-// NewRouter sets up the HTTP routes and returns the top-level handler.
 func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service, q *queue.Queue, tmpl *Templates, staticDir string) http.Handler {
 	mux := http.NewServeMux()
 
@@ -23,10 +23,10 @@ func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service,
 	}
 
 	// static files
-	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
+	mux.Handle("GET /static/", http.StripPrefix("/static", neuter(http.FileServer(http.Dir(staticDir)))))
 
 	// data files served from DataDir
-	mux.Handle("GET /data/", http.StripPrefix("/data/", http.FileServer(http.Dir(cfg.DataDir))))
+	mux.Handle("GET /data/", http.StripPrefix("/data/", neuter(http.FileServer(http.Dir(cfg.DataDir)))))
 
 	// auth
 	mux.HandleFunc("GET /login", h.handleLoginPage)
@@ -56,6 +56,18 @@ func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service,
 
 func logRequests(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r)
+	})
+}
+
+// https://www.alexedwards.net/blog/disable-http-fileserver-directory-listings#using-middleware
+func neuter(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/") {
+			http.NotFound(w, r)
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }
