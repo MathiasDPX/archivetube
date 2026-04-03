@@ -1,39 +1,46 @@
 package config
 
-import "os"
+import (
+	"log"
 
-type Config struct {
-	ListenAddr   string
-	DataDir      string
-	YtDlpPath    string
-	Proxy        string
-	RealIPHeader string // HTTP Header with the real IP if behind a reverse proxy (like X-Forwarded-For)
-	PasswordHash string // bcrypt hash from ARCHIVETUBE_PASSWORD env var
+	"github.com/BurntSushi/toml"
+)
+
+type ServerConfig struct {
+	ListenAddr   string `toml:"listen_addr"`
+	RealIPHeader string `toml:"real_ip_header"`
 }
 
-func Load() *Config {
+type ArchiveConfig struct {
+	YtDlpPath string `toml:"ytdlp_path"`
+	DataDir   string `toml:"data_dir"`
+	Proxy     string `toml:"proxy"`
+}
+
+type AuthConfig struct {
+	PasswordHash string `toml:"password_hash"`
+}
+
+type Config struct {
+	Server  ServerConfig  `toml:"server"`
+	Archive ArchiveConfig `toml:"archive"`
+	Auth    AuthConfig    `toml:"auth"`
+}
+
+func Load(path string) *Config {
 	c := &Config{
-		ListenAddr: ":8080",
-		DataDir:    "./data",
-		YtDlpPath:  "yt-dlp",
+		Server: ServerConfig{
+			ListenAddr: ":8080",
+		},
+		Archive: ArchiveConfig{
+			YtDlpPath: "yt-dlp",
+			DataDir:   "./data",
+		},
 	}
-	if v := os.Getenv("ARCHIVETUBE_LISTEN"); v != "" {
-		c.ListenAddr = v
+
+	if _, err := toml.DecodeFile(path, c); err != nil {
+		log.Fatalf("loading config file %s: %v", path, err)
 	}
-	if v := os.Getenv("ARCHIVETUBE_DATA_DIR"); v != "" {
-		c.DataDir = v
-	}
-	if v := os.Getenv("ARCHIVETUBE_YTDLP_PATH"); v != "" {
-		c.YtDlpPath = v
-	}
-	if v := os.Getenv("ARCHIVETUBE_PROXY"); v != "" {
-		c.Proxy = v
-	}
-	if v := os.Getenv("ARCHIVETUBE_PASSWORD"); v != "" {
-		c.PasswordHash = v
-	}
-	if v := os.Getenv("ARCHIVETUBE_IPHEADER"); v != "" {
-		c.RealIPHeader = v
-	}
+
 	return c
 }

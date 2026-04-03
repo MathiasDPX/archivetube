@@ -192,7 +192,7 @@ func (h *handlers) handleDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filePath := filepath.Join(h.config.DataDir, video.VideoRelPath)
+	filePath := filepath.Join(h.config.Archive.DataDir, video.VideoRelPath)
 	filename := video.Title + "." + video.VideoExt
 
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
@@ -313,14 +313,14 @@ func (h *handlers) handleDeleteVideo(w http.ResponseWriter, r *http.Request) {
 
 	for _, rel := range []string{video.VideoRelPath, video.ThumbnailRelPath, video.InfoJSONRelPath} {
 		if rel != "" {
-			os.Remove(filepath.Join(h.config.DataDir, rel))
+			os.Remove(filepath.Join(h.config.Archive.DataDir, rel))
 		}
 	}
 
 	subtitles, _ := h.store.GetSubtitles(video.ID)
 	for _, sub := range subtitles {
 		if sub.RelPath != "" {
-			os.Remove(filepath.Join(h.config.DataDir, sub.RelPath))
+			os.Remove(filepath.Join(h.config.Archive.DataDir, sub.RelPath))
 		}
 	}
 
@@ -352,7 +352,7 @@ func (h *handlers) handleDeleteCreator(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	channelDir := filepath.Join(h.config.DataDir, "media", "channels", channel.YoutubeChannelID)
+	channelDir := filepath.Join(h.config.Archive.DataDir, "media", "channels", channel.YoutubeChannelID)
 	for _, prefix := range []string{"avatar", "banner"} {
 		for _, ext := range []string{"jpg", "png", "webp"} {
 			os.Remove(filepath.Join(channelDir, prefix+"."+ext))
@@ -434,7 +434,7 @@ func (h *handlers) handleArchiveBatch(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) renderWithRequest(w http.ResponseWriter, r *http.Request, name string, data any) {
-	if err := h.tmpl.render(w, name, data, isLoggedIn(r), h.config.PasswordHash != "", absoluteRequestURL(r)); err != nil {
+	if err := h.tmpl.render(w, name, data, isLoggedIn(r), h.config.Auth.PasswordHash != "", absoluteRequestURL(r)); err != nil {
 		log.Printf("render error: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}

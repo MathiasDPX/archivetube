@@ -27,7 +27,7 @@ func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service,
 	mux.Handle("GET /static/", http.StripPrefix("/static", neuter(http.FileServer(http.Dir(staticDir)))))
 
 	// data files served from DataDir
-	mux.Handle("GET /data/", http.StripPrefix("/data/", neuter(http.FileServer(http.Dir(cfg.DataDir)))))
+	mux.Handle("GET /data/", http.StripPrefix("/data/", neuter(http.FileServer(http.Dir(cfg.Archive.DataDir)))))
 
 	// auth
 	mux.HandleFunc("GET /login", h.handleLoginPage)
