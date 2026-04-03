@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var video = document.getElementById('video-player');
     if (!video) return;
 
+    let params = new URLSearchParams(document.location.search);
     var chapters = Array.from(document.querySelectorAll('.chapter-item'));
 
     chapters.forEach(function (item) {
@@ -22,14 +23,23 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    const videoTitle = document.getElementById('video-title').innerText;
-    const channelName = document.getElementById('channel-name').innerText;
-    const channelAvatarURL = document.getElementById('channel-avatar').src;
-
-    const videoId = video['data-video-id']
-    const channelId = video['data-channel-id']
+    try {
+        const timestamp = params.get('t');
+        if (timestamp != null) {
+            video.currentTime = parseFloat(timestamp);
+        }
+    } catch (error) {
+        console.warn("Failed to process timecode parameter")
+    }
 
     if ('mediaSession' in navigator) {
+        const videoTitle = document.getElementById('video-title').innerText;
+        const channelName = document.getElementById('channel-name').innerText;
+        const channelAvatarURL = document.getElementById('channel-avatar').src;
+
+        const videoId = video['data-video-id']
+        const channelId = video['data-channel-id']
+
         metadata = {
             title: videoTitle,
             artist: channelName,
