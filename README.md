@@ -2,7 +2,7 @@
 
 A self-hosted YouTube archiving application
 
-## Docker
+## Installation
 
 ### Configuration
 
@@ -16,6 +16,9 @@ Env variables:
 | `ARCHIVETUBE_PROXY`        | None         | Proxy URL for yt-dlp           |
 | `ARCHIVETUBE_PASSWORD`     | None         | bcrypt password for login      |
 
+Save theses variables inside a `.env` file to save them
+
+### Using Docker
 
 ```bash
 docker pull ghcr.io/mathiasdpx/archivetube:latest
@@ -24,7 +27,23 @@ docker run -d \
   -p 8080:8080 \
   -v archivetube-data:/app/data \
   --name archivetube \
+  --env-file ./.env
   ghcr.io/mathiasdpx/archivetube:latest
 ```
 
-Then open [http://localhost:8080](http://localhost:8080).
+### Using Docker Compose
+
+```yaml
+archivetube:
+    container_name: archivetube
+    image: ghcr.io/mathiasdpx/archivetube:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+#     - ./cookies.txt:/app/cookies.txt # For using your account's cookies with yt-dlp - Not recommended
+    env_file: .env
+```
+
+Then open [http://localhost:8080](http://localhost:8080)
