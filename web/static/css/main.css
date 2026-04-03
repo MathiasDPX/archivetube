@@ -1,6 +1,7 @@
 /* === Reset === */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
+
 :root {
     --bg: #0f0f0f;
     --bg-raised: #1a1a1a;
@@ -14,8 +15,8 @@
     --blue-hover: #65b8ff;
     --radius: 4px;
     --radius-sm: 8px;
-    --font: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-    --mono: "Roboto Mono", "SF Mono", monospace;
+    --font: "Roboto", sans-serif;
+    --mono: "Roboto Mono", monospace;
 }
 
 html { font-size: 16px; }
@@ -82,7 +83,6 @@ a { color: inherit; text-decoration: none; }
 .nav-links a {
     color: var(--text);
     font-size: 0.875rem;
-    font-weight: 500;
     padding: 8px 14px;
     border-radius: 8px;
     transition: background 0.15s;
