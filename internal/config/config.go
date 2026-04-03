@@ -7,6 +7,7 @@ type Config struct {
 	DataDir      string
 	YtDlpPath    string
 	Proxy        string
+	RealIPHeader string // HTTP Header with the real IP if behind a reverse proxy (like X-Forwarded-For)
 	PasswordHash string // bcrypt hash from ARCHIVETUBE_PASSWORD env var
 }
 
@@ -30,6 +31,9 @@ func Load() *Config {
 	}
 	if v := os.Getenv("ARCHIVETUBE_PASSWORD"); v != "" {
 		c.PasswordHash = v
+	}
+	if v := os.Getenv("ARCHIVETUBE_IPHEADER"); v != "" {
+		c.RealIPHeader = v
 	}
 	return c
 }
