@@ -3,6 +3,8 @@ package web
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"log"
+	"net"
 	"net/http"
 	"sync"
 
@@ -50,6 +52,26 @@ func isLoggedIn(r *http.Request) bool {
 		return false
 	}
 	return validSession(c.Value)
+}
+
+func (h *handlers) getRealIp(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+
+	if err != nil {
+		return r.RemoteAddr
+	}
+
+	if h.config.RealIPHeader == "" {
+		return host
+	}
+
+	realip := r.Header.Get(h.config.RealIPHeader)
+
+	if realip == "" {
+		return host
+	}
+
+	return realip
 }
 
 // middleware that redirects to /login if not authenticated
@@ -103,6 +125,7 @@ func (h *handlers) handleLoginSubmit(w http.ResponseWriter, r *http.Request) {
 
 	password := r.FormValue("password")
 	if err := bcrypt.CompareHashAndPassword([]byte(h.config.PasswordHash), []byte(password)); err != nil {
+		log.Printf("WARN: failed login attempt from %s", h.getRealIp(r))
 		h.renderWithRequest(w, r, "login.tmpl", LoginData{Error: "Invalid password."})
 		return
 	}
