@@ -25,13 +25,13 @@
                                 </button>
                             </form>
                             <a href="/archive?url=https://www.youtube.com/channel/{{.Channel.YoutubeChannelID}}" class="dropdown-item">
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM14 14h-4v-2h4v2zM5.12 5l.81-1h12l.94 1H5.12z"/></svg>
+                                <svg width="16" height="16" viewBox="0 0 512 512" fill="none" stroke="currentColor" stroke-width="40" stroke-linecap="round"><path d="M401.35 170.444V273.111c0 64.53 0 96.796-20.034 116.842C361.283 410 329.038 410 264.55 410h-17.1c-64.488 0-96.732 0-116.766-20.047-20.034-20.046-20.034-52.312-20.034-116.842V170.444M85 136.222c0-16.132 0-24.198 5.008-29.21C95.017 102 103.078 102 119.2 102h273.6c16.122 0 24.183 0 29.191 5.012C427 112.024 427 120.09 427 136.222c0 16.133 0 24.199-5.009 29.211-5.008 5.011-13.069 5.011-29.191 5.011H119.2c-16.122 0-24.183 0-29.192-5.011C85 160.421 85 152.355 85 136.222Z"/></svg>
                                 Rearchive
                             </a>
                             <form method="post" action="/creators/{{.Channel.YoutubeChannelID}}/delete" onsubmit="return confirm('Are you sure you want to delete the channel avatar and banner?')">
                                 <button type="submit" class="dropdown-item dropdown-item-danger">
                                     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                                    Delete creator
+                                    Delete
                                 </button>
                             </form>
                             <span class="dropdown-item" style="cursor: default;">{{.Total}} video{{if ne .Total 1}}s{{end}} archived</span>
