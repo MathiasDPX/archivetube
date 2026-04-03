@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/MathiasDPX/archivetube/internal/domain"
+	"github.com/MathiasDPX/archivetube/internal/metrics"
 	"github.com/MathiasDPX/archivetube/internal/store"
 )
 
@@ -300,6 +301,9 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 	if err := s.Store.ReplaceSubtitles(videoID, domainSubs); err != nil {
 		return fmt.Errorf("replacing subtitles: %w", err)
 	}
+
+	metrics.IncArchivedVideos()
+	metrics.AddArchiveSizeBytes(fileSizeBytes)
 
 	return nil
 }

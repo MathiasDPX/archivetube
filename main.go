@@ -10,6 +10,7 @@ import (
 
 	"github.com/MathiasDPX/archivetube/internal/archive"
 	"github.com/MathiasDPX/archivetube/internal/config"
+	"github.com/MathiasDPX/archivetube/internal/metrics"
 	"github.com/MathiasDPX/archivetube/internal/queue"
 	"github.com/MathiasDPX/archivetube/internal/store"
 	"github.com/MathiasDPX/archivetube/internal/web"
@@ -28,6 +29,13 @@ func main() {
 		log.Fatalf("opening store: %v", err)
 	}
 	defer st.Close()
+
+	if n, err := st.CountVideos(); err == nil {
+		metrics.SetVideosTotal(n)
+	}
+	if n, err := st.CountChannels(); err == nil {
+		metrics.SetChannelsTotal(n)
+	}
 
 	archiveSvc := archive.New(cfg.YtDlpPath, cfg.DataDir, cfg.Proxy, st)
 	q := queue.New(archiveSvc.ArchiveURL)

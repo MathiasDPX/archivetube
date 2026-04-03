@@ -6,6 +6,8 @@ import (
 	"log"
 	"sync"
 	"time"
+
+	"github.com/MathiasDPX/archivetube/internal/metrics"
 )
 
 type Status string
@@ -40,6 +42,7 @@ func New(archiveFn ArchiveFunc) *Queue {
 		archive: archiveFn,
 	}
 	go q.worker()
+	metrics.SetQueueSize(0)
 	return q
 }
 
@@ -56,6 +59,7 @@ func (q *Queue) Enqueue(url string, quality string) *Job {
 		CreatedAt: time.Now(),
 	}
 	q.jobs = append(q.jobs, job)
+	q.updateMetrics()
 	return job
 }
 
@@ -94,6 +98,7 @@ func (q *Queue) ClearFinished() {
 		}
 	}
 	q.jobs = remaining
+	q.updateMetrics()
 }
 
 func (q *Queue) worker() {
@@ -138,7 +143,19 @@ func (q *Queue) setStatus(id string, status Status, errMsg string) {
 		if j.ID == id {
 			j.Status = status
 			j.Error = errMsg
-			return
+			break
 		}
 	}
+	q.updateMetrics()
+}
+
+// updateMetrics sets the queue size gauge. Must be called with q.mu held.
+func (q *Queue) updateMetrics() {
+	n := 0
+	for _, j := range q.jobs {
+		if j.Status == StatusPending || j.Status == StatusProcessing {
+			n++
+		}
+	}
+	metrics.SetQueueSize(n)
 }
