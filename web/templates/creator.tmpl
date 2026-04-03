@@ -24,13 +24,17 @@
                                     Refresh metadata
                                 </button>
                             </form>
+                            <a href="/archive?url=https://www.youtube.com/channel/{{.Channel.YoutubeChannelID}}" class="dropdown-item">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM14 14h-4v-2h4v2zM5.12 5l.81-1h12l.94 1H5.12z"/></svg>
+                                Rearchive
+                            </a>
                             <form method="post" action="/creators/{{.Channel.YoutubeChannelID}}/delete" onsubmit="return confirm('Are you sure you want to delete the channel avatar and banner?')">
                                 <button type="submit" class="dropdown-item dropdown-item-danger">
                                     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                                     Delete creator
                                 </button>
                             </form>
-                            <span class="dropdown-item">{{.Total}} video{{if ne .Total 1}}s{{end}} archived</span>
+                            <span class="dropdown-item" style="cursor: default;">{{.Total}} video{{if ne .Total 1}}s{{end}} archived</span>
                         </div>
                     </div>
                     {{end}}
