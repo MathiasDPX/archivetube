@@ -7,6 +7,7 @@ import (
 
 	"github.com/MathiasDPX/archivetube/internal/archive"
 	"github.com/MathiasDPX/archivetube/internal/config"
+	"github.com/MathiasDPX/archivetube/internal/metrics"
 	"github.com/MathiasDPX/archivetube/internal/queue"
 	"github.com/MathiasDPX/archivetube/internal/store"
 )
@@ -51,13 +52,10 @@ func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service,
 	mux.HandleFunc("GET /api/playlist", h.requireAuthAPI(h.handlePlaylistFetch))
 	mux.HandleFunc("POST /archive/batch", h.requireAuthAPI(h.handleArchiveBatch))
 
-	return logRequests(mux)
-}
+	// metrics
+	mux.Handle("GET /metrics", metrics.Handler())
 
-func logRequests(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		next.ServeHTTP(w, r)
-	})
+	return mux
 }
 
 // https://www.alexedwards.net/blog/disable-http-fileserver-directory-listings#using-middleware

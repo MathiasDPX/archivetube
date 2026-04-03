@@ -140,6 +140,18 @@ func (s *Store) DeleteVideo(id int64) error {
 	return err
 }
 
+func (s *Store) CountVideos() (int, error) {
+	var count int
+	err := s.db.QueryRow("SELECT COUNT(*) FROM videos").Scan(&count)
+	return count, err
+}
+
+func (s *Store) CountChannels() (int, error) {
+	var count int
+	err := s.db.QueryRow("SELECT COUNT(*) FROM channels").Scan(&count)
+	return count, err
+}
+
 func (s *Store) ListVideosByChannel(channelID int64, limit, offset int) ([]domain.Video, int, error) {
 	var total int
 	if err := s.db.QueryRow("SELECT COUNT(*) FROM videos WHERE channel_id = ?", channelID).Scan(&total); err != nil {
