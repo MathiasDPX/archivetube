@@ -15,6 +15,7 @@ Env variables:
 | `ARCHIVETUBE_YTDLP_PATH`   | `yt-dlp`     | Path or command for yt-dlp     |
 | `ARCHIVETUBE_PROXY`        | None         | Proxy URL for yt-dlp           |
 | `ARCHIVETUBE_PASSWORD`     | None         | bcrypt password for login      |
+| `ARCHIVETUBE_IPHEADER`     | None         | Header with real client IP     |
 
 Save theses variables inside a `.env` file to save them
 
