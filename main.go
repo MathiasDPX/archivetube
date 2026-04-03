@@ -40,6 +40,9 @@ func main() {
 	archiveSvc := archive.New(cfg.YtDlpPath, cfg.DataDir, cfg.Proxy, st)
 	q := queue.New(archiveSvc.ArchiveURL)
 
+	if sha := os.Getenv("GIT_SHA"); sha != "" {
+		web.SetGitSHA(sha)
+	}
 	webPaths := web.DefaultWebPaths()
 	tmpl, err := web.NewTemplates(webPaths.TemplateDir)
 	if err != nil {

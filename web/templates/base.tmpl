@@ -47,6 +47,7 @@
     <main>
         {{block "content" .}}{{end}}
     </main>
+    <footer>{{if eq gitSHA "dev"}}dev build{{else}}Build <a href="https://github.com/MathiasDPX/archivetube/commit/{{ gitSHA }}">{{ slice gitSHA 0 8 }}</a>{{end}}</footer>
     {{block "scripts" .}}{{end}}
 </body>
 </html>{{end}}

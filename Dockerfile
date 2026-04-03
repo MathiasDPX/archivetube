@@ -14,6 +14,9 @@ FROM debian:bookworm-slim
 
 WORKDIR /app
 
+ARG GIT_SHA
+ENV GIT_SHA=$GIT_SHA
+
 ARG TARGETARCH
 
 RUN apt-get update && apt-get install -y --no-install-recommends \

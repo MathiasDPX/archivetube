@@ -25,6 +25,7 @@ var funcMap = template.FuncMap{
 	"ogDesc":      ogDesc,
 	"webPath":     webPath,
 	"currentURL":  func() string { return "" },
+	"gitSHA":      func() string { return "dev" },
 	"loggedIn":    func() bool { return false },
 	"authEnabled": func() bool { return true },
 }
@@ -96,6 +97,10 @@ func webPath(p string) string {
 	}
 	p = filepath.ToSlash(p)
 	return strings.TrimLeft(p, "/")
+}
+
+func SetGitSHA(sha string) {
+	funcMap["gitSHA"] = func() string { return sha }
 }
 
 type Templates struct {
