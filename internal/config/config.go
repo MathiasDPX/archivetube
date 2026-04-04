@@ -9,6 +9,7 @@ import (
 type ServerConfig struct {
 	ListenAddr   string `toml:"listen_addr"`
 	RealIPHeader string `toml:"real_ip_header"`
+	CorsHost     string `toml:"cors_host"`
 }
 
 type ArchiveConfig struct {
@@ -38,6 +39,7 @@ func Load(path string) *Config {
 	c := &Config{
 		Server: ServerConfig{
 			ListenAddr: ":8080",
+			CorsHost:   "*",
 		},
 		Archive: ArchiveConfig{
 			YtDlpPath: "yt-dlp",

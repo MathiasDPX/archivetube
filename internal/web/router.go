@@ -60,7 +60,22 @@ func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service,
 	// metrics
 	mux.Handle("GET /metrics", metrics.Handler())
 
-	return mux
+	return corsMiddleware(mux, cfg.Server.CorsHost)
+}
+
+func corsMiddleware(next http.Handler, origin string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", origin) // TODO: use config variable
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 // https://www.alexedwards.net/blog/disable-http-fileserver-directory-listings#using-middleware

@@ -12,6 +12,7 @@ Create a `config.toml` file with this inside:
 [server]
 listen_addr = ":8080"
 real_ip_header = ""
+cors_host = "*"
 
 [archive]
 ytdlp_path = "yt-dlp"
