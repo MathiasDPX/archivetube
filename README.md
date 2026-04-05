@@ -1,6 +1,18 @@
-# archivetube
+# <img src="https://raw.githubusercontent.com/MathiasDPX/archivetube/refs/heads/main/web/static/favicon.svg" style="height:1em;"> archivetube
 
 A self-hosted YouTube archiving application
+
+## Features
+
+- Authentication with password, oidc or none
+- Full video archiving (video, thumbnail, subtitles, description...)
+- Batch archiving of playlists or channels in one go
+- YouTube-like interface
+- rclone compatible, local file-based storage works with rclone mount 
+
+Future features:
+- Transcoding
+- Dedicated player with chapters integration
 
 ## Installation
 
