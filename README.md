@@ -41,6 +41,10 @@ password_hash = "bcrypt-password"
 #oidc_redirect_url = "https://yourinstance.com/auth/callback"
 ```
 
+### Dev environment
+
+You can simply start the server with `go run .`
+
 ### Using Docker
 
 ```bash
