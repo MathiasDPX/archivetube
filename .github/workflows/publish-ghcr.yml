@@ -6,6 +6,13 @@ on:
       - main
     tags:
       - 'v*'
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'web/**'
+      - 'Dockerfile'
+      - '.github/workflows/publish-ghcr.yml'
   workflow_dispatch:
 
 permissions:
