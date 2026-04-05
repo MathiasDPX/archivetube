@@ -85,6 +85,8 @@ func (h *handlers) authEnabled() bool {
 		return h.config.Auth.PasswordHash != ""
 	case "oidc":
 		return true
+	case "none":
+		return false
 	default:
 		return h.config.Auth.PasswordHash != ""
 	}
@@ -128,7 +130,7 @@ func (h *handlers) handleLoginPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.config.Auth.PasswordHash == "" || isLoggedIn(r) {
+	if h.config.Auth.PasswordHash == "" || h.config.Auth.Mode == "none" || isLoggedIn(r) {
 		http.Redirect(w, r, "/archive", http.StatusSeeOther)
 		return
 	}
