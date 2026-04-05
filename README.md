@@ -32,13 +32,13 @@ data_dir = "./data"
 proxy = ""
 
 [auth]
-mode = "password" # "password" or "oidc"
-password_hash = "bcrypt-generator"
+mode = "password" # "password", "oidc", or "none"
+password_hash = "bcrypt-password"
 
-#oidc_issuer = "https://auth.mathiasd.fr"
+#oidc_issuer = "https://auth.example.com"
 #oidc_client_id = ""
 #oidc_client_secret = ""
-#oidc_redirect_url = ""
+#oidc_redirect_url = "https://yourinstance.com/auth/callback"
 ```
 
 ### Using Docker
@@ -57,7 +57,8 @@ docker run -d \
 ### Using Docker Compose
 
 ```yaml
-archivetube:
+services:
+  archivetube:
     container_name: archivetube
     image: ghcr.io/mathiasdpx/archivetube:latest
     restart: unless-stopped
