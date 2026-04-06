@@ -146,6 +146,12 @@ func (s *Store) CountVideos() (int, error) {
 	return count, err
 }
 
+func (s *Store) SumArchiveSize() (int64, error) {
+	var size int64
+	err := s.db.QueryRow("SELECT COALESCE(SUM(file_size_bytes), 0) FROM videos").Scan(&size)
+	return size, err
+}
+
 func (s *Store) CountChannels() (int, error) {
 	var count int
 	err := s.db.QueryRow("SELECT COUNT(*) FROM channels").Scan(&count)

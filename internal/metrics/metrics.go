@@ -16,15 +16,15 @@ var (
 		},
 	)
 
-	archivedVideosTotal = promauto.NewCounter(
-		prometheus.CounterOpts{
+	archivedVideosTotal = promauto.NewGauge(
+		prometheus.GaugeOpts{
 			Name: "archivetube_archived_videos_total",
 			Help: "Total number of archived videos",
 		},
 	)
 
-	archiveSizeTotal = promauto.NewCounter(
-		prometheus.CounterOpts{
+	archiveSizeTotal = promauto.NewGauge(
+		prometheus.GaugeOpts{
 			Name: "archivetube_archive_size",
 			Help: "Total bytes of archived videos",
 		},
@@ -61,10 +61,18 @@ func IncArchivedVideos() {
 	archivedVideosTotal.Inc()
 }
 
+func SetArchivedVideosTotal(n int) {
+	archivedVideosTotal.Set(float64(n))
+}
+
 func AddArchiveSizeBytes(n int64) {
 	if n > 0 {
 		archiveSizeTotal.Add(float64(n))
 	}
+}
+
+func SetArchiveSizeBytes(n int64) {
+	archiveSizeTotal.Set(float64(n))
 }
 
 func SetVideosTotal(n int) {

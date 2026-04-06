@@ -32,9 +32,13 @@ func main() {
 
 	if n, err := st.CountVideos(); err == nil {
 		metrics.SetVideosTotal(n)
+		metrics.SetArchivedVideosTotal(n)
 	}
 	if n, err := st.CountChannels(); err == nil {
 		metrics.SetChannelsTotal(n)
+	}
+	if n, err := st.SumArchiveSize(); err == nil {
+		metrics.SetArchiveSizeBytes(n)
 	}
 
 	archiveSvc := archive.New(cfg.Archive.YtDlpPath, cfg.Archive.DataDir, cfg.Archive.Proxy, st)
