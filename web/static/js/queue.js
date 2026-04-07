@@ -2,7 +2,7 @@ const list = document.getElementById("queue-list");
 const clearForm = document.getElementById("clear-form");
 
 function statusLabel(s) {
-    const labels = { pending: "Pending", processing: "Downloading…", done: "Done", error: "Error" };
+    const labels = { pending: "Pending", processing: "Downloading…", done: "Done", error: "Error", already_archived: "Already archived" };
     return labels[s] || s;
 }
 
@@ -19,7 +19,7 @@ function render(jobs) {
         return;
     }
 
-    const hasFinished = jobs.some(j => j.status === "done" || j.status === "error");
+    const hasFinished = jobs.some(j => j.status === "done" || j.status === "error" || j.status === "already_archived");
     clearForm.style.display = hasFinished ? "" : "none";
 
     list.innerHTML = jobs.map(j => {

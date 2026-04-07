@@ -39,7 +39,7 @@ func New(ytdlpPath, dataDir, proxy string, st *store.Store) *Service {
 // matches a 11-character video ID
 var ytVideoIDRe = regexp.MustCompile(`^[A-Za-z0-9_-]{11}$`)
 
-func extractVideoID(rawURL string) (string, error) {
+func ExtractVideoID(rawURL string) (string, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return "", fmt.Errorf("invalid URL: %w", err)
@@ -93,7 +93,7 @@ func qualityToFormat(quality string) string {
 }
 
 func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) error {
-	ytID, err := extractVideoID(url)
+	ytID, err := ExtractVideoID(url)
 	if err != nil {
 		return fmt.Errorf("extracting video ID: %w", err)
 	}

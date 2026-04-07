@@ -223,6 +223,23 @@ func (h *handlers) handleArchiveSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.queue.IsURLQueued(url) {
+		h.renderWithRequest(w, r, "archive.tmpl", ArchiveData{
+			Error:        "This URL is already in the queue.",
+			Jobs:         h.queue.Jobs(),
+			PrefilledURL: url,
+		})
+		return
+	}
+
+	if ytID, err := archive.ExtractVideoID(url); err == nil {
+		if v, _ := h.store.GetVideoByYoutubeID(ytID); v != nil {
+			h.queue.EnqueueAlreadyArchived(url)
+			http.Redirect(w, r, "/archive", http.StatusSeeOther)
+			return
+		}
+	}
+
 	h.queue.Enqueue(url, quality)
 	http.Redirect(w, r, "/archive", http.StatusSeeOther)
 }
@@ -425,9 +442,19 @@ func (h *handlers) handleArchiveBatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, url := range body.URLs {
-		if url != "" {
-			h.queue.Enqueue(url, body.Quality)
+		if url == "" {
+			continue
 		}
+		if h.queue.IsURLQueued(url) {
+			continue
+		}
+		if ytID, err := archive.ExtractVideoID(url); err == nil {
+			if v, _ := h.store.GetVideoByYoutubeID(ytID); v != nil {
+				h.queue.EnqueueAlreadyArchived(url)
+				continue
+			}
+		}
+		h.queue.Enqueue(url, body.Quality)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

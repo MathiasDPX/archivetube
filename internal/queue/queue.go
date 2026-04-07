@@ -13,10 +13,11 @@ import (
 type Status string
 
 const (
-	StatusPending    Status = "pending"
-	StatusProcessing Status = "processing"
-	StatusDone       Status = "done"
-	StatusError      Status = "error"
+	StatusPending         Status = "pending"
+	StatusProcessing      Status = "processing"
+	StatusDone            Status = "done"
+	StatusError           Status = "error"
+	StatusAlreadyArchived Status = "already_archived"
 )
 
 type Job struct {
@@ -63,6 +64,33 @@ func (q *Queue) Enqueue(url string, quality string) *Job {
 	return job
 }
 
+func (q *Queue) EnqueueAlreadyArchived(url string) *Job {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	q.nextID++
+	job := &Job{
+		ID:        fmt.Sprintf("%d", q.nextID),
+		URL:       url,
+		Status:    StatusAlreadyArchived,
+		CreatedAt: time.Now(),
+	}
+	q.jobs = append(q.jobs, job)
+	return job
+}
+
+func (q *Queue) IsURLQueued(url string) bool {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	for _, j := range q.jobs {
+		if j.URL == url && (j.Status == StatusPending || j.Status == StatusProcessing) {
+			return true
+		}
+	}
+	return false
+}
+
 func (q *Queue) Jobs() []Job {
 	q.mu.Lock()
 	defer q.mu.Unlock()
@@ -79,7 +107,7 @@ func (q *Queue) RemoveJob(id string) bool {
 	defer q.mu.Unlock()
 
 	for i, j := range q.jobs {
-		if j.ID == id && (j.Status == StatusDone || j.Status == StatusError) {
+		if j.ID == id && (j.Status == StatusDone || j.Status == StatusError || j.Status == StatusAlreadyArchived) {
 			q.jobs = append(q.jobs[:i], q.jobs[i+1:]...)
 			return true
 		}

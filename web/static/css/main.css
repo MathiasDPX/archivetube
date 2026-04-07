@@ -463,6 +463,10 @@ a {
     background: #ff6b6b;
 }
 
+.queue-already_archived .queue-status-dot {
+    background: #ffb86b;
+}
+
 @keyframes pulse {
 
     0%,
