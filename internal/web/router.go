@@ -58,7 +58,9 @@ func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service,
 	mux.HandleFunc("POST /archive/batch", h.requireAuthAPI(h.handleArchiveBatch))
 
 	// metrics
-	mux.Handle("GET /metrics", metrics.Handler())
+	if cfg.Observability.EnablePrometheus {
+		mux.Handle("GET /metrics", metrics.Handler())
+	}
 
 	return corsMiddleware(mux, cfg.Server.CorsHost)
 }

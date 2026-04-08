@@ -29,10 +29,15 @@ type AuthConfig struct {
 	OIDCRedirectURL  string `toml:"oidc_redirect_url"`
 }
 
+type ObservabilityConfig struct {
+	EnablePrometheus bool `toml:"prometheus"`
+}
+
 type Config struct {
-	Server  ServerConfig  `toml:"server"`
-	Archive ArchiveConfig `toml:"archive"`
-	Auth    AuthConfig    `toml:"auth"`
+	Server        ServerConfig        `toml:"server"`
+	Archive       ArchiveConfig       `toml:"archive"`
+	Auth          AuthConfig          `toml:"auth"`
+	Observability ObservabilityConfig `toml:"observability"`
 }
 
 func Load(path string) *Config {
@@ -44,6 +49,9 @@ func Load(path string) *Config {
 		Archive: ArchiveConfig{
 			YtDlpPath: "yt-dlp",
 			DataDir:   "./data",
+		},
+		Observability: ObservabilityConfig{
+			EnablePrometheus: false,
 		},
 	}
 

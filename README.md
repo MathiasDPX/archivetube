@@ -26,6 +26,9 @@ listen_addr = ":8080"
 real_ip_header = ""
 cors_host = "*"
 
+[observability]
+prometheus = false
+
 [archive]
 ytdlp_path = "yt-dlp"
 data_dir = "./data"
