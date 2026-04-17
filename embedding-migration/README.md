@@ -10,7 +10,7 @@ Small script to add embed all videos in the database
 2. Backup the database
 3. Copy the database file to `./embedding-migration/database.db`
 4. Create a `apikey` with your HackClub AI inside
-5. Install duckdb, numpy and requests with `pip install duckdb numpy requests`
+5. Install requirements with `pip install -r requirements.txt`
 6. Run `python main.py`
 7. Copy `database.db` back to the database
 

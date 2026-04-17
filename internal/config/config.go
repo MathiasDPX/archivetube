@@ -29,6 +29,11 @@ type AuthConfig struct {
 	OIDCRedirectURL  string `toml:"oidc_redirect_url"`
 }
 
+type SmartSearchConfig struct {
+	Enabled bool   `toml:"enabled"`
+	ApiKey  string `toml:"apikey"`
+}
+
 type ObservabilityConfig struct {
 	EnablePrometheus bool `toml:"prometheus"`
 }
@@ -38,6 +43,7 @@ type Config struct {
 	Archive       ArchiveConfig       `toml:"archive"`
 	Auth          AuthConfig          `toml:"auth"`
 	Observability ObservabilityConfig `toml:"observability"`
+	SmartSearch   SmartSearchConfig   `toml:"smart_search"`
 }
 
 func Load(path string) *Config {
@@ -52,6 +58,10 @@ func Load(path string) *Config {
 		},
 		Observability: ObservabilityConfig{
 			EnablePrometheus: false,
+		},
+		SmartSearch: SmartSearchConfig{
+			Enabled: false,
+			ApiKey:  "archivetube // smart search enabled but no api key set",
 		},
 	}
 

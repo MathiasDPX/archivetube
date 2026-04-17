@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS channels (
 CREATE TABLE IF NOT EXISTS videos (
     id                  BIGINT PRIMARY KEY DEFAULT nextval('videos_id_seq'),
     youtube_video_id    TEXT    UNIQUE NOT NULL,
-    channel_id          BIGINT NOT NULL REFERENCES channels(id),
+    channel_id          BIGINT NOT NULL,
     title               TEXT    NOT NULL DEFAULT '',
     description         TEXT    NOT NULL DEFAULT '',
     duration_seconds    INTEGER NOT NULL DEFAULT 0,
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS videos (
 
 CREATE TABLE IF NOT EXISTS video_chapters (
     id            BIGINT PRIMARY KEY DEFAULT nextval('video_chapters_id_seq'),
-    video_id      BIGINT NOT NULL REFERENCES videos(id),
+    video_id      BIGINT NOT NULL,
     position      INTEGER NOT NULL,
     title         TEXT    NOT NULL DEFAULT '',
     start_seconds REAL    NOT NULL DEFAULT 0,
@@ -60,13 +60,19 @@ CREATE TABLE IF NOT EXISTS video_chapters (
 
 CREATE TABLE IF NOT EXISTS video_subtitles (
     id            BIGINT PRIMARY KEY DEFAULT nextval('video_subtitles_id_seq'),
-    video_id      BIGINT NOT NULL REFERENCES videos(id),
+    video_id      BIGINT NOT NULL,
     language_code TEXT    NOT NULL DEFAULT '',
     language_name TEXT    NOT NULL DEFAULT '',
     ext           TEXT    NOT NULL DEFAULT '',
     rel_path      TEXT    NOT NULL DEFAULT '',
     is_default    INTEGER NOT NULL DEFAULT 0,
     UNIQUE(video_id, language_code)
+);
+
+CREATE TABLE IF NOT EXISTS videos_vectors (
+    youtube_video_id TEXT PRIMARY KEY,
+    title_vec FLOAT[384],
+    description_vec FLOAT[384]
 );
 
 CREATE INDEX IF NOT EXISTS idx_videos_archived_at ON videos(archived_at);
@@ -102,6 +108,22 @@ func New(dbPath string) (*Store, error) {
 	}
 
 	s := &Store{db: db}
+
+	// Always ensure sequences are ahead of existing max IDs
+	// (prevents PK collisions after DB restart which DuckDB treats as
+	// DELETE+INSERT, violating foreign key constraints)
+	for _, r := range []struct{ seq, table, col string }{
+		{"channels_id_seq", "channels", "id"},
+		{"videos_id_seq", "videos", "id"},
+		{"video_chapters_id_seq", "video_chapters", "id"},
+		{"video_subtitles_id_seq", "video_subtitles", "id"},
+	} {
+		var maxID sql.NullInt64
+		if err := db.QueryRow(fmt.Sprintf("SELECT MAX(%s) FROM %s", r.col, r.table)).Scan(&maxID); err == nil && maxID.Valid && maxID.Int64 > 0 {
+			db.Exec(fmt.Sprintf("DROP SEQUENCE IF EXISTS %s", r.seq))
+			db.Exec(fmt.Sprintf("CREATE SEQUENCE %s START %d", r.seq, maxID.Int64+1))
+		}
+	}
 
 	if needsMigration {
 		log.Printf("found existing SQLite database, migrating to DuckDB...")

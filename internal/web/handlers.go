@@ -13,6 +13,7 @@ import (
 	"github.com/MathiasDPX/archivetube/internal/archive"
 	"github.com/MathiasDPX/archivetube/internal/config"
 	"github.com/MathiasDPX/archivetube/internal/domain"
+	"github.com/MathiasDPX/archivetube/internal/embedding"
 	"github.com/MathiasDPX/archivetube/internal/queue"
 	"github.com/MathiasDPX/archivetube/internal/store"
 )
@@ -72,6 +73,22 @@ func (h *handlers) handleHome(w http.ResponseWriter, r *http.Request) {
 	}
 	perPage := 24
 	offset := (page - 1) * perPage
+
+	if query != "" && h.config.SmartSearch.Enabled {
+		videos, err := h.smartSearch(query, perPage)
+		if err != nil {
+			h.serverError(w, err)
+			return
+		}
+		h.renderWithRequest(w, r, "home.tmpl", HomeData{
+			Videos:  videos,
+			Query:   query,
+			Page:    1,
+			Total:   len(videos),
+			PerPage: perPage,
+		})
+		return
+	}
 
 	videos, total, err := h.store.ListVideos(query, "desc", perPage, offset)
 	if err != nil {
@@ -258,6 +275,24 @@ func (h *handlers) handleAPIVideos(w http.ResponseWriter, r *http.Request) {
 	perPage := 24
 	offset := (page - 1) * perPage
 
+	if query != "" && h.config.SmartSearch.Enabled {
+		videos, err := h.smartSearch(query, perPage)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"videos":  videos,
+			"page":    1,
+			"total":   len(videos),
+			"perPage": perPage,
+		})
+		return
+	}
+
 	videos, total, err := h.store.ListVideos(query, "desc", perPage, offset)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
@@ -341,6 +376,8 @@ func (h *handlers) handleDeleteVideo(w http.ResponseWriter, r *http.Request) {
 			os.Remove(filepath.Join(h.config.Archive.DataDir, sub.RelPath))
 		}
 	}
+
+	h.store.DeleteVideoVectors(video.YoutubeVideoID)
 
 	channelID := video.ChannelID
 
@@ -486,6 +523,14 @@ func absoluteRequestURL(r *http.Request) string {
 		return r.URL.RequestURI()
 	}
 	return scheme + "://" + host + r.URL.RequestURI()
+}
+
+func (h *handlers) smartSearch(query string, limit int) ([]domain.Video, error) {
+	queryVec, err := embedding.GetEmbedding(h.config.SmartSearch.ApiKey, query)
+	if err != nil {
+		return nil, fmt.Errorf("embedding query: %w", err)
+	}
+	return h.store.SearchVideosSmart(queryVec, limit)
 }
 
 func (h *handlers) serverError(w http.ResponseWriter, err error) {

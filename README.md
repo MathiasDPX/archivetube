@@ -42,6 +42,11 @@ password_hash = "bcrypt-password"
 #oidc_client_id = ""
 #oidc_client_secret = ""
 #oidc_redirect_url = "https://yourinstance.com/auth/callback"
+
+[smart_search]
+# Use AI to embed video's title and description for smarter searchs
+enabled = true
+apikey = "sk-hc-v1-..."
 ```
 
 ### Dev environment

@@ -8,35 +8,55 @@ import (
 )
 
 func (s *Store) UpsertVideo(v *domain.Video) (int64, error) {
-	_, err := s.db.Exec(`
-		INSERT INTO videos (youtube_video_id, channel_id, title, description, duration_seconds,
-			published_at, webpage_url, video_rel_path, video_ext, thumbnail_rel_path,
-			info_json_rel_path, file_size_bytes, width, height)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT(youtube_video_id) DO UPDATE SET
-			channel_id         = excluded.channel_id,
-			title              = excluded.title,
-			description        = excluded.description,
-			duration_seconds   = excluded.duration_seconds,
-			published_at       = excluded.published_at,
-			webpage_url        = excluded.webpage_url,
-			video_rel_path     = excluded.video_rel_path,
-			video_ext          = excluded.video_ext,
-			thumbnail_rel_path = excluded.thumbnail_rel_path,
-			info_json_rel_path = excluded.info_json_rel_path,
-			file_size_bytes    = excluded.file_size_bytes,
-			width              = excluded.width,
-			height             = excluded.height`,
-		v.YoutubeVideoID, v.ChannelID, v.Title, v.Description, v.DurationSeconds,
-		v.PublishedAt, v.WebpageURL, v.VideoRelPath, v.VideoExt, v.ThumbnailRelPath,
-		v.InfoJSONRelPath, v.FileSizeBytes, v.Width, v.Height,
-	)
+	var id int64
+	row := s.db.QueryRow("SELECT id FROM videos WHERE youtube_video_id = ?", v.YoutubeVideoID)
+	err := row.Scan(&id)
+
+	if err == sql.ErrNoRows {
+		_, err = s.db.Exec(`
+			INSERT INTO videos (youtube_video_id, channel_id, title, description, duration_seconds,
+				published_at, webpage_url, video_rel_path, video_ext, thumbnail_rel_path,
+				info_json_rel_path, file_size_bytes, width, height)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			v.YoutubeVideoID, v.ChannelID, v.Title, v.Description, v.DurationSeconds,
+			v.PublishedAt, v.WebpageURL, v.VideoRelPath, v.VideoExt, v.ThumbnailRelPath,
+			v.InfoJSONRelPath, v.FileSizeBytes, v.Width, v.Height,
+		)
+		if err != nil {
+			return 0, err
+		}
+		row = s.db.QueryRow("SELECT id FROM videos WHERE youtube_video_id = ?", v.YoutubeVideoID)
+		if err := row.Scan(&id); err != nil {
+			return 0, err
+		}
+		return id, nil
+	}
 	if err != nil {
 		return 0, err
 	}
-	var id int64
-	row := s.db.QueryRow("SELECT id FROM videos WHERE youtube_video_id = ?", v.YoutubeVideoID)
-	if err := row.Scan(&id); err != nil {
+
+	_, err = s.db.Exec(`
+		UPDATE videos SET
+			channel_id         = ?,
+			title              = ?,
+			description        = ?,
+			duration_seconds   = ?,
+			published_at       = ?,
+			webpage_url        = ?,
+			video_rel_path     = ?,
+			video_ext          = ?,
+			thumbnail_rel_path = ?,
+			info_json_rel_path = ?,
+			file_size_bytes    = ?,
+			width              = ?,
+			height             = ?
+		WHERE id = ?`,
+		v.ChannelID, v.Title, v.Description, v.DurationSeconds,
+		v.PublishedAt, v.WebpageURL, v.VideoRelPath, v.VideoExt, v.ThumbnailRelPath,
+		v.InfoJSONRelPath, v.FileSizeBytes, v.Width, v.Height,
+		id,
+	)
+	if err != nil {
 		return 0, err
 	}
 	return id, nil

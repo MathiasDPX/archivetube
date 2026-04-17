@@ -7,25 +7,46 @@ import (
 )
 
 func (s *Store) UpsertChannel(ch *domain.Channel) (int64, error) {
-	_, err := s.db.Exec(`
-		INSERT INTO channels (youtube_channel_id, handle, name, url, description, thumbnail_path, banner_path, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-		ON CONFLICT(youtube_channel_id) DO UPDATE SET
-			handle         = excluded.handle,
-			name           = excluded.name,
-			url            = excluded.url,
-			description    = excluded.description,
-			thumbnail_path = CASE WHEN excluded.thumbnail_path != '' THEN excluded.thumbnail_path ELSE channels.thumbnail_path END,
-			banner_path    = CASE WHEN excluded.banner_path != '' THEN excluded.banner_path ELSE channels.banner_path END,
-			updated_at     = CURRENT_TIMESTAMP`,
-		ch.YoutubeChannelID, ch.Handle, ch.Name, ch.URL, ch.Description, ch.ThumbnailPath, ch.BannerPath,
-	)
+	var id int64
+	row := s.db.QueryRow("SELECT id FROM channels WHERE youtube_channel_id = ?", ch.YoutubeChannelID)
+	err := row.Scan(&id)
+
+	if err == sql.ErrNoRows {
+		_, err = s.db.Exec(`
+			INSERT INTO channels (youtube_channel_id, handle, name, url, description, thumbnail_path, banner_path, updated_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?, now())`,
+			ch.YoutubeChannelID, ch.Handle, ch.Name, ch.URL, ch.Description, ch.ThumbnailPath, ch.BannerPath,
+		)
+		if err != nil {
+			return 0, err
+		}
+		row = s.db.QueryRow("SELECT id FROM channels WHERE youtube_channel_id = ?", ch.YoutubeChannelID)
+		if err := row.Scan(&id); err != nil {
+			return 0, err
+		}
+		return id, nil
+	}
 	if err != nil {
 		return 0, err
 	}
-	var id int64
-	row := s.db.QueryRow("SELECT id FROM channels WHERE youtube_channel_id = ?", ch.YoutubeChannelID)
-	if err := row.Scan(&id); err != nil {
+
+	// avoids DuckDB FK violation on ON CONFLICT
+	_, err = s.db.Exec(`
+		UPDATE channels SET
+			handle         = ?,
+			name           = ?,
+			url            = ?,
+			description    = ?,
+			thumbnail_path = CASE WHEN ? != '' THEN ? ELSE thumbnail_path END,
+			banner_path    = CASE WHEN ? != '' THEN ? ELSE banner_path END,
+			updated_at     = now()
+		WHERE id = ?`,
+		ch.Handle, ch.Name, ch.URL, ch.Description,
+		ch.ThumbnailPath, ch.ThumbnailPath,
+		ch.BannerPath, ch.BannerPath,
+		id,
+	)
+	if err != nil {
 		return 0, err
 	}
 	return id, nil
@@ -59,7 +80,7 @@ func (s *Store) DeleteChannel(id int64) error {
 }
 
 func (s *Store) ClearChannelImages(id int64) error {
-	_, err := s.db.Exec("UPDATE channels SET thumbnail_path = '', banner_path = '', updated_at = CURRENT_TIMESTAMP WHERE id = ?", id)
+	_, err := s.db.Exec("UPDATE channels SET thumbnail_path = '', banner_path = '', updated_at = now() WHERE id = ?", id)
 	return err
 }
 

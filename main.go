@@ -43,7 +43,7 @@ func main() {
 		metrics.SetArchiveSizeBytes(n)
 	}
 
-	archiveSvc := archive.New(cfg.Archive.YtDlpPath, cfg.Archive.DataDir, cfg.Archive.Proxy, st)
+	archiveSvc := archive.New(cfg.Archive.YtDlpPath, cfg.Archive.DataDir, cfg.Archive.Proxy, st, &cfg.SmartSearch)
 	q := queue.New(archiveSvc.ArchiveURL)
 
 	if sha := os.Getenv("GIT_SHA"); sha != "" {

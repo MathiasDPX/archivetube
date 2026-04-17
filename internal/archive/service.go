@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"fmt"
 	"io"
 	"net/url"
@@ -15,24 +16,28 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/MathiasDPX/archivetube/internal/config"
 	"github.com/MathiasDPX/archivetube/internal/domain"
+	"github.com/MathiasDPX/archivetube/internal/embedding"
 	"github.com/MathiasDPX/archivetube/internal/metrics"
 	"github.com/MathiasDPX/archivetube/internal/store"
 )
 
 type Service struct {
-	YtDlpPath string
-	DataDir   string
-	Proxy     string
-	Store     *store.Store
+	YtDlpPath   string
+	DataDir     string
+	Proxy       string
+	Store       *store.Store
+	SmartSearch *config.SmartSearchConfig
 }
 
-func New(ytdlpPath, dataDir, proxy string, st *store.Store) *Service {
+func New(ytdlpPath, dataDir, proxy string, st *store.Store, ss *config.SmartSearchConfig) *Service {
 	return &Service{
-		YtDlpPath: ytdlpPath,
-		DataDir:   dataDir,
-		Proxy:     proxy,
-		Store:     st,
+		YtDlpPath:   ytdlpPath,
+		DataDir:     dataDir,
+		Proxy:       proxy,
+		Store:       st,
+		SmartSearch: ss,
 	}
 }
 
@@ -300,6 +305,22 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 	}
 	if err := s.Store.ReplaceSubtitles(videoID, domainSubs); err != nil {
 		return fmt.Errorf("replacing subtitles: %w", err)
+	}
+
+	if s.SmartSearch.Enabled {
+		titleVec, err := embedding.GetEmbedding(s.SmartSearch.ApiKey, info.Title)
+		if err != nil {
+			log.Printf("embedding title for %s: %v", info.ID, err)
+		}
+		descVec, err := embedding.GetEmbedding(s.SmartSearch.ApiKey, info.Description)
+		if err != nil {
+			log.Printf("embedding description for %s: %v", info.ID, err)
+		}
+		if titleVec != nil && descVec != nil {
+			if err := s.Store.UpsertVideoVectors(info.ID, titleVec, descVec); err != nil {
+				log.Printf("storing vectors for %s: %v", info.ID, err)
+			}
+		}
 	}
 
 	metrics.IncArchivedVideos()
