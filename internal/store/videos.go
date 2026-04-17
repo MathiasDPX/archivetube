@@ -91,7 +91,7 @@ func (s *Store) ListVideos(query string, sort string, limit, offset int) ([]doma
 	where := ""
 	var args []any
 	if query != "" {
-		where = "WHERE v.title LIKE ? OR c.name LIKE ?"
+		where = "WHERE v.title ILIKE ? OR c.name ILIKE ?"
 		like := "%" + query + "%"
 		args = append(args, like, like)
 	}
@@ -136,8 +136,23 @@ func (s *Store) ListVideos(query string, sort string, limit, offset int) ([]doma
 }
 
 func (s *Store) DeleteVideo(id int64) error {
-	_, err := s.db.Exec("DELETE FROM videos WHERE id = ?", id)
-	return err
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec("DELETE FROM video_chapters WHERE video_id = ?", id); err != nil {
+		return err
+	}
+	if _, err := tx.Exec("DELETE FROM video_subtitles WHERE video_id = ?", id); err != nil {
+		return err
+	}
+	if _, err := tx.Exec("DELETE FROM videos WHERE id = ?", id); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (s *Store) CountVideos() (int, error) {
