@@ -45,12 +45,12 @@ document.addEventListener('DOMContentLoaded', function () {
             artist: channelName,
             artwork: [
                 {
-                    src: channelAvatarURL,
-                    sizes: "512x512" // lie
-                },
-                {
                     src: `/data/media/channels/${channelId}/${videoId}/video.webp`,
                     sizes: "1920x1080" // lie again
+                },
+                {
+                    src: channelAvatarURL,
+                    sizes: "512x512" // lie
                 }
             ]
         }
