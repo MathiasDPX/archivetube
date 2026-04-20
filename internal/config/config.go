@@ -29,6 +29,12 @@ type AuthConfig struct {
 	OIDCRedirectURL  string `toml:"oidc_redirect_url"`
 }
 
+type DearrowConfig struct {
+	Enabled     bool   `toml:"enable"`
+	ApiURL      string `toml:"main_api"`
+	ThumbApiURL string `toml:"thumb_api"`
+}
+
 type SmartSearchConfig struct {
 	Enabled bool   `toml:"enabled"`
 	ApiKey  string `toml:"apikey"`
@@ -44,6 +50,7 @@ type Config struct {
 	Auth          AuthConfig          `toml:"auth"`
 	Observability ObservabilityConfig `toml:"observability"`
 	SmartSearch   SmartSearchConfig   `toml:"smart_search"`
+	Dearrow       DearrowConfig       `toml:"dearrow"`
 }
 
 func Load(path string) *Config {
@@ -62,6 +69,11 @@ func Load(path string) *Config {
 		SmartSearch: SmartSearchConfig{
 			Enabled: false,
 			ApiKey:  "archivetube // smart search enabled but no api key set",
+		},
+		Dearrow: DearrowConfig{
+			Enabled:     false,
+			ApiURL:      "https://sponsor.ajay.app",
+			ThumbApiURL: "https://dearrow-thumb.ajay.app",
 		},
 	}
 

@@ -2,7 +2,9 @@ package store
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/MathiasDPX/archivetube/internal/domain"
 )
@@ -86,6 +88,38 @@ func (s *Store) GetVideoByID(id int64) (*domain.Video, error) {
 		WHERE v.id = ?`, id))
 }
 
+func (s *Store) getDearrowTitle(youtubeId string, fallback string) string {
+	if !s.cfg.Dearrow.Enabled || youtubeId == "" {
+		return fallback
+	}
+
+	type Response struct {
+		Titles []struct {
+			Title string `json:"title"`
+		} `json:"titles"`
+	}
+
+	resp, err := http.Get(s.cfg.Dearrow.ApiURL + "/api/branding?videoID=" + youtubeId)
+	if err != nil {
+		return fallback
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fallback
+	}
+
+	var data Response
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return fallback
+	}
+
+	if len(data.Titles) == 0 {
+		return fallback
+	}
+
+	return data.Titles[0].Title
+}
+
 func (s *Store) scanVideo(row *sql.Row) (*domain.Video, error) {
 	v := &domain.Video{}
 	err := row.Scan(&v.ID, &v.YoutubeVideoID, &v.ChannelID, &v.Title, &v.Description,
@@ -99,6 +133,7 @@ func (s *Store) scanVideo(row *sql.Row) (*domain.Video, error) {
 	if err != nil {
 		return nil, err
 	}
+	v.Title = s.getDearrowTitle(v.YoutubeVideoID, v.Title)
 	return v, nil
 }
 
@@ -150,6 +185,7 @@ func (s *Store) ListVideos(query string, sort string, limit, offset int) ([]doma
 			&v.ChannelName, &v.ChannelYoutubeID); err != nil {
 			return nil, 0, err
 		}
+		v.Title = s.getDearrowTitle(v.YoutubeVideoID, v.Title)
 		videos = append(videos, v)
 	}
 	return videos, total, rows.Err()
@@ -225,6 +261,7 @@ func (s *Store) ListVideosByChannel(channelID int64, limit, offset int) ([]domai
 			&v.ChannelName, &v.ChannelYoutubeID); err != nil {
 			return nil, 0, err
 		}
+		v.Title = s.getDearrowTitle(v.YoutubeVideoID, v.Title)
 		videos = append(videos, v)
 	}
 	return videos, total, rows.Err()

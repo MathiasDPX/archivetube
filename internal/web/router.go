@@ -1,6 +1,7 @@
 package web
 
 import (
+	"io"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -31,7 +32,7 @@ func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service,
 	mux.Handle("GET /static/", http.StripPrefix("/static", neuter(http.FileServer(http.Dir(staticDir)))))
 
 	// data files served from DataDir
-	mux.Handle("GET /data/", http.StripPrefix("/data/", neuter(http.FileServer(http.Dir(cfg.Archive.DataDir)))))
+	mux.Handle("GET /data/", http.StripPrefix("/data/", dearrowThumbnail(neuter(http.FileServer(http.Dir(cfg.Archive.DataDir))), h.config.Dearrow)))
 
 	// auth
 	mux.HandleFunc("GET /login", h.handleLoginPage)
@@ -73,6 +74,40 @@ func corsMiddleware(next http.Handler, origin string) http.Handler {
 
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func dearrowThumbnail(next http.Handler, dearrowConfig config.DearrowConfig) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "media/channels/") && strings.HasSuffix(r.URL.Path, "/video.webp") && dearrowConfig.Enabled {
+			parts := strings.Split(r.URL.Path, "/")
+
+			if len(parts) < 5 {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			videoID := parts[3]
+
+			resp, err := http.Get(dearrowConfig.ThumbApiURL + "/api/v1/getThumbnail?videoID=" + videoID)
+			if err != nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+			defer resp.Body.Close()
+
+			for k, v := range resp.Header {
+				for _, vv := range v {
+					w.Header().Add(k, vv)
+				}
+			}
+
+			w.WriteHeader(resp.StatusCode)
+			io.Copy(w, resp.Body)
 			return
 		}
 

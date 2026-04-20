@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/MathiasDPX/archivetube/internal/config"
 	_ "github.com/duckdb/duckdb-go/v2"
 	_ "modernc.org/sqlite"
 )
@@ -81,10 +82,11 @@ CREATE INDEX IF NOT EXISTS idx_channels_name ON channels(name);
 `
 
 type Store struct {
-	db *sql.DB
+	db  *sql.DB
+	cfg *config.Config
 }
 
-func New(dbPath string) (*Store, error) {
+func New(dbPath string, cfg *config.Config) (*Store, error) {
 	// If the file exists and is a SQLite database, migrate it to DuckDB in place
 	needsMigration := false
 	sqliteBackup := dbPath + ".sqlite-backup"
@@ -107,7 +109,7 @@ func New(dbPath string) (*Store, error) {
 		return nil, fmt.Errorf("running migrations: %w", err)
 	}
 
-	s := &Store{db: db}
+	s := &Store{db: db, cfg: cfg}
 
 	// Always ensure sequences are ahead of existing max IDs
 	// (prevents PK collisions after DB restart which DuckDB treats as

@@ -26,7 +26,7 @@ func main() {
 	}
 
 	dbPath := filepath.Join(cfg.Archive.DataDir, "archivetube.db")
-	st, err := store.New(dbPath)
+	st, err := store.New(dbPath, cfg)
 	if err != nil {
 		log.Fatalf("opening store: %v", err)
 	}
