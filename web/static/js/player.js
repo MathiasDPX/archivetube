@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-    var video = document.getElementById('video-player');
+    var video = document.querySelector('video');
     if (!video) return;
 
     let params = new URLSearchParams(document.location.search);
@@ -89,4 +89,68 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
         console.warn("mediaSession unavailable on this browser :'(")
     }
+
+    const playButton = document.getElementById("play");
+    let lastMuteVolume = video.volume;
+
+    addEventListener("keydown", (event) => {
+        const tag = event.target && event.target.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || (event.target && event.target.isContentEditable)) {
+            return;
+        }
+
+        console.log("debug: ", event.code)
+
+        // Seek will move 5s
+        const seekValue = 5;
+        // Change volume by 10% per press
+        const volumeChange = 0.1;
+
+        if (event.code == "Space" || event.code == "KeyK") {
+            // Play/pause
+            if (video.paused) {
+                if (playButton) playButton.setAttribute("data-icon", "u");
+                video.play();
+            } else {
+                if (playButton) playButton.setAttribute("data-icon", "P");
+                video.pause();
+            }
+        } else if (event.code == "KeyF") {
+            // Fullscreen
+            if (document.fullscreenElement != null) {
+                document.exitFullscreen()
+            } else {
+                video.requestFullscreen()
+            }
+        } else if (event.code == "ArrowLeft") {
+            video.currentTime -= seekValue;
+        } else if (event.code == "ArrowRight") {
+            video.currentTime += seekValue;
+        } else if (event.code.startsWith("Digit")) {
+            // todo: same for "NumpadX"
+            percent = parseInt(event.code.slice(5)) / 10;
+            video.currentTime = video.duration * percent;
+        } else if (event.code == "ArrowUp") {
+            video.volume = Math.min(1, video.volume + volumeChange);
+        } else if (event.code == "ArrowDown") {
+            video.volume = Math.max(0, video.volume - volumeChange);
+        } else if (event.code == "KeyM") {
+            if (video.volume != 0) {
+                lastMuteVolume = video.volume;
+                console.log("set lastmutevolume to "+lastMuteVolume)
+                video.volume = 0;
+            } else {
+                console.log(lastMuteVolume)
+                if (lastMuteVolume == 0) {
+                    video.volume = 1;
+                } else {
+                    video.volume = lastMuteVolume;
+                }
+            }
+        } else {
+            return;
+        }
+
+        event.preventDefault();
+    })
 });
