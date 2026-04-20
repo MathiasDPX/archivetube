@@ -99,14 +99,12 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        console.log("debug: ", event.code)
-
         // Seek will move 5s
         const seekValue = 5;
         // Change volume by 10% per press
         const volumeChange = 0.1;
 
-        if (event.code == "Space" || event.code == "KeyK") {
+        if (event.code == "Space" || event.key == "k") {
             // Play/pause
             if (video.paused) {
                 if (playButton) playButton.setAttribute("data-icon", "u");
@@ -115,38 +113,44 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (playButton) playButton.setAttribute("data-icon", "P");
                 video.pause();
             }
-        } else if (event.code == "KeyF") {
+
+        } else if (event.key == "f") {
             // Fullscreen
             if (document.fullscreenElement != null) {
                 document.exitFullscreen()
             } else {
                 video.requestFullscreen()
             }
+
         } else if (event.code == "ArrowLeft") {
             video.currentTime -= seekValue;
+
         } else if (event.code == "ArrowRight") {
             video.currentTime += seekValue;
+
         } else if (event.code.startsWith("Digit")) {
             // todo: same for "NumpadX"
             percent = parseInt(event.code.slice(5)) / 10;
             video.currentTime = video.duration * percent;
+
         } else if (event.code == "ArrowUp") {
             video.volume = Math.min(1, video.volume + volumeChange);
+
         } else if (event.code == "ArrowDown") {
             video.volume = Math.max(0, video.volume - volumeChange);
-        } else if (event.code == "KeyM") {
+
+        } else if (event.key == "m") {
             if (video.volume != 0) {
                 lastMuteVolume = video.volume;
-                console.log("set lastmutevolume to "+lastMuteVolume)
                 video.volume = 0;
             } else {
-                console.log(lastMuteVolume)
                 if (lastMuteVolume == 0) {
                     video.volume = 1;
                 } else {
                     video.volume = lastMuteVolume;
                 }
             }
+
         } else {
             return;
         }
