@@ -9,6 +9,7 @@ edit-url-template = "https://github.com/MathiasDPX/archivetube/blob/docs/{path}"
 additional-css = ["./src/assets/style.css"]
 preferred-dark-theme = "ayu"
 sidebar-header-nav = false
+mathjax-support = true
 
 [output.html.print]
 enable = false

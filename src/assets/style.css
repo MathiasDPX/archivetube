@@ -1,11 +1,13 @@
 .ayu {
-    --inline-code-color: #FF0033;
-}
-
-.ayu {
     /* Change ayu colors to red */
     --sidebar-active: #FF0033;
     --inline-code-color: #FF0033;
     --search-mark-bg: #ff3636;
     --sidebar-header-border-color: #90030C;
+}
+
+span.MathJax {
+    /* Center MathJax*/
+    justify-content: center;
+    display: flex;
 }
