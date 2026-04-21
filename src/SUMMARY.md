@@ -6,6 +6,7 @@
 
 - [Features](./user/README.md)
   - [Timestamp Link](./user/timestamp-link.md)
+  - [Keybinds](./user/keybinds.md)
 
 # Admin guide
 
