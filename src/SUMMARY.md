@@ -2,7 +2,7 @@
 
 - [Introduction](README.md)
 
-# Admin guide
+# User guide
 
 - [Features](./user/README.md)
   - [Timestamp Link](./user/timestamp-link.md)
@@ -10,6 +10,7 @@
 
 # Admin guide
 
+- [Installation](./admin/installation.md)
 - [Auth](./admin/auth.md)
 - [Features](./admin/README.md)
   - [Dearrow](./admin/dearrow.md)
