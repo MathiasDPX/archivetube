@@ -6,6 +6,8 @@ language = "en"
 [output.html]
 git-repository-url = "https://github.com/MathiasDPX/archivetube/tree/docs"
 edit-url-template = "https://github.com/MathiasDPX/archivetube/blob/docs/{path}"
+additional-css = ["./assets/style.css"]
+preferred-dark-theme = "ayu"
 
 [output.html.print]
 enable = false
