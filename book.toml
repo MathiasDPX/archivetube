@@ -2,3 +2,10 @@
 title = "ArchiveTube"
 authors = ["MathiasDPX"]
 language = "en"
+
+[output.html]
+git-repository-url = "https://github.com/MathiasDPX/archivetube/tree/docs"
+edit-url-template = "https://github.com/MathiasDPX/archivetube/blob/docs/{path}"
+
+[output.html.print]
+enable = false
