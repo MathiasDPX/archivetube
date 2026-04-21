@@ -36,7 +36,7 @@ jobs:
         uses: mfinelli/setup-imagemagick@v7
 
       - name: Convert JPEG to Progressive JPEG
-        run: mogrify -interlace plane ./src/assets/images/*.jpg
+        run: magick mogrify -interlace plane ./src/assets/images/*.jpg
         continue-on-error: true
 
       - name: Build with mdBook
