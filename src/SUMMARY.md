@@ -12,3 +12,4 @@
 - [Auth](./admin/auth.md)
 - [Features](./admin/README.md)
   - [Dearrow](./admin/dearrow.md)
+  - [Prometheus](./admin/prometheus.md)
