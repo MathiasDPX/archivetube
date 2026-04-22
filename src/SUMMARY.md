@@ -12,6 +12,8 @@
 
 - [Installation](./admin/installation.md)
 - [Auth](./admin/auth.md)
+- [Extra config](./admin/extra-config.md)
 - [Features](./admin/README.md)
   - [Dearrow](./admin/dearrow.md)
   - [Prometheus](./admin/prometheus.md)
+  - [Smart search](./admin/smart-search.md)

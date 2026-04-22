@@ -14,9 +14,11 @@ mode = "password"
 password_hash = "bcrypt-password"
 ```
 
-Now you, need to start a container using Docker. You can find features to extend your configuration in the Admin guide's [features](./README.md)
+Now you, need to start a container using Docker. You can find features to extend your configuration in the Admin guide's [features](./) and [extra configuration](./extra-config.md)
 
-## Docker Compose (recommended)
+## Running
+
+### Docker Compose (recommended)
 
 ```yaml
 services:
@@ -31,7 +33,7 @@ services:
       - ./config.toml:/app/config.toml
 ```
 
-## Docker
+### Docker
 
 ```bash
 docker pull ghcr.io/mathiasdpx/archivetube:latest
@@ -44,6 +46,7 @@ docker run -d \
   ghcr.io/mathiasdpx/archivetube:latest
 ```
 
-## Podman
+### Podman
 
 You might be able to run ArchiveTube with [Podman](https://podman.io/) but this has not been tested yet.
+
