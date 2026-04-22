@@ -10,65 +10,22 @@ A self-hosted YouTube archiving application
 - YouTube-like interface
 - rclone compatible, local file-based storage works with rclone mount 
 
-Future features:
-- Transcoding
-- Dedicated player with chapters integration
-
 ## Installation
 
-### Configuration
-
-Create a `config.toml` file with this inside:
+1. Create a `config.toml`
 
 ```toml
 [server]
 listen_addr = ":8080"
-real_ip_header = ""
-cors_host = "*"
-
-[observability]
-prometheus = false
-
-[archive]
-ytdlp_path = "yt-dlp"
-data_dir = "./data"
-proxy = ""
 
 [auth]
-mode = "password" # "password", "oidc", or "none"
+mode = "password"
 password_hash = "bcrypt-password"
-
-#oidc_issuer = "https://auth.example.com"
-#oidc_client_id = ""
-#oidc_client_secret = ""
-#oidc_redirect_url = "https://yourinstance.com/auth/callback"
-
-[smart_search]
-# Use AI to embed video's title and description for smarter searchs
-enabled = true
-apikey = "sk-hc-v1-..."
 ```
 
-### Dev environment
+2. And that's all, now you can start ArchiveTube with Docker Compose
 
-You can simply start the server with `go run .`
-
-### Using Docker
-
-```bash
-docker pull ghcr.io/mathiasdpx/archivetube:latest
-
-docker run -d \
-  -p 8080:8080 \
-  -v ./data:/app/data \
-  -v ./config.toml:/app/config.toml \
-  --name archivetube \
-  ghcr.io/mathiasdpx/archivetube:latest
-```
-
-### Using Docker Compose
-
-```yaml
+```yml
 services:
   archivetube:
     container_name: archivetube
@@ -79,7 +36,6 @@ services:
     volumes:
       - ./data:/app/data
       - ./config.toml:/app/config.toml
-#     - ./cookies.txt:/app/cookies.txt # For using your account's cookies with yt-dlp - Not recommended
 ```
 
-Then open [http://localhost:8080](http://localhost:8080)
+You can find the full installation guide in the [documentation](https://mathiasdpx.github.io/archivetube/admin/installation.html)
