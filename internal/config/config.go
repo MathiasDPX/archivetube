@@ -22,7 +22,6 @@ type AuthConfig struct {
 	Mode         string `toml:"mode"`
 	PasswordHash string `toml:"password_hash"`
 
-	// OIDC settings (used when mode = "oidc")
 	OIDCIssuer       string `toml:"oidc_issuer"`
 	OIDCClientID     string `toml:"oidc_client_id"`
 	OIDCClientSecret string `toml:"oidc_client_secret"`
@@ -38,6 +37,8 @@ type DearrowConfig struct {
 type SmartSearchConfig struct {
 	Enabled bool   `toml:"enabled"`
 	ApiKey  string `toml:"apikey"`
+	Backend string `toml:"backend"`
+	Model   string `toml:"model"`
 }
 
 type ObservabilityConfig struct {
@@ -68,6 +69,7 @@ func Load(path string) *Config {
 		},
 		SmartSearch: SmartSearchConfig{
 			Enabled: false,
+			Model:   "qwen/qwen3-embedding-8b",
 			ApiKey:  "archivetube // smart search enabled but no api key set",
 		},
 		Dearrow: DearrowConfig{

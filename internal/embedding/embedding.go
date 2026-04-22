@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/MathiasDPX/archivetube/internal/config"
 )
 
 const (
-	apiURL = "https://ai.hackclub.com/proxy/v1/embeddings"
-	model  = "qwen/qwen3-embedding-8b"
-	dims   = 384
+	dims = 384
 )
 
 type embeddingResponse struct {
@@ -19,9 +19,9 @@ type embeddingResponse struct {
 	} `json:"data"`
 }
 
-func GetEmbedding(apiKey, text string) ([]float32, error) {
+func GetEmbedding(config *config.SmartSearchConfig, text string) ([]float32, error) {
 	body, err := json.Marshal(map[string]any{
-		"model":      model,
+		"model":      config.Model,
 		"input":      text,
 		"dimensions": dims,
 	})
@@ -29,11 +29,11 @@ func GetEmbedding(apiKey, text string) ([]float32, error) {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", apiURL, bytes.NewReader(body))
+	req, err := http.NewRequest("POST", config.Backend, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+apiKey)
+	req.Header.Set("Authorization", "Bearer "+config.ApiKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)

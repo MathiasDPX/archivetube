@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 	"fmt"
 	"io"
+	"log"
 	"net/url"
 	"os"
 	"os/exec"
@@ -308,11 +308,11 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 	}
 
 	if s.SmartSearch.Enabled {
-		titleVec, err := embedding.GetEmbedding(s.SmartSearch.ApiKey, info.Title)
+		titleVec, err := embedding.GetEmbedding(s.SmartSearch, info.Title)
 		if err != nil {
 			log.Printf("embedding title for %s: %v", info.ID, err)
 		}
-		descVec, err := embedding.GetEmbedding(s.SmartSearch.ApiKey, info.Description)
+		descVec, err := embedding.GetEmbedding(s.SmartSearch, info.Description)
 		if err != nil {
 			log.Printf("embedding description for %s: %v", info.ID, err)
 		}

@@ -526,7 +526,7 @@ func absoluteRequestURL(r *http.Request) string {
 }
 
 func (h *handlers) smartSearch(query string, limit int) ([]domain.Video, error) {
-	queryVec, err := embedding.GetEmbedding(h.config.SmartSearch.ApiKey, query)
+	queryVec, err := embedding.GetEmbedding(&h.config.SmartSearch, query)
 	if err != nil {
 		return nil, fmt.Errorf("embedding query: %w", err)
 	}
