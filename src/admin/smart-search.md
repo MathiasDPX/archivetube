@@ -6,12 +6,15 @@ ArchiveTube search feature can be enhance by embedding video's title and descrip
 > If you already have archived videos and smart-search was disabled, you need to follow the [Migration guide](#migration)
 
 
-Currently, the only supported OpenRouter backend is [HackClub AI](https://ai.hackclub.com), but this will change in the future (probably less than 2 days after this commit).
-You simply need to add this in your config and replace the apikey by your HackClub AI api key and restart your container
+It supports any OpenRouter-like API, including HackClub AI. You simply need to add this in your config and replace the apikey and restart your container.
+
+If you want to use OpenRouter instead, just change the backend to `https://openrouter.ai/api/v1/embeddings`
 
 ```toml
 [smart_search]
 enabled = true
+backend = "https://ai.hackclub.com/proxy/v1/embeddings"
+model = "qwen/qwen3-embedding-8b"
 apikey = "sk-hc-v1-"
 ```
 
