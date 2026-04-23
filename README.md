@@ -1,6 +1,6 @@
 <div align="center">
 <br>
-  <img src="https://raw.githubusercontent.com/MathiasDPX/archivetube/refs/heads/main/web/static/favicon.svg" alt="ArchiveTube Logo" height="200"/>
+  <img src="./web/static/logo.png" alt="ArchiveTube Logo" height="200"/>
   
   # ArchiveTube 
   
@@ -11,6 +11,7 @@ A self-hosted YouTube archiving application made for high-quality and complete a
 
 - Authentication with password, oidc or none
 - Full video archiving (video, thumbnail, subtitles, description...)
+- Dearrow integration
 - Batch archiving of playlists or channels in one go
 - YouTube-like interface
 - rclone compatible, local file-based storage works with rclone mount 
