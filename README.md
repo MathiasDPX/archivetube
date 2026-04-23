@@ -1,6 +1,11 @@
-# <img src="https://raw.githubusercontent.com/MathiasDPX/archivetube/refs/heads/main/web/static/favicon.svg" style="height:1em;"> archivetube
-
-A self-hosted YouTube archiving application
+<div align="center">
+<br>
+  <img src="https://raw.githubusercontent.com/MathiasDPX/archivetube/refs/heads/main/web/static/favicon.svg" alt="ArchiveTube Logo" height="200"/>
+  
+  # ArchiveTube 
+  
+A self-hosted YouTube archiving application made for high-quality and complete archives
+</div>
 
 ## Features
 
@@ -39,3 +44,7 @@ services:
 ```
 
 You can find the full installation guide in the [documentation](https://mathiasdpx.github.io/archivetube/admin/installation.html)
+
+# Development
+
+Follow the 1st step of the normal installation for setting up the confnig and start 
