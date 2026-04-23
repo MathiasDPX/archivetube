@@ -72,7 +72,7 @@ func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service,
 
 func otelMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/data/") {
+		if strings.HasPrefix(r.URL.Path, "/data/") || strings.HasPrefix(r.URL.Path, "/metrics") {
 			next.ServeHTTP(w, r)
 			return
 		}
