@@ -2,11 +2,11 @@
 
 The code for configuration can be found on <a href="https://github.com/MathiasDPX/archivetube/blob/main/internal/config/config.go" target="_blank">`internal/config/config.go`</a>
 
-_This page assume you have basic <a href="https://toml.io/fr/" target="_blank">TOML<a/> knowledge_
+_This page assumes you have basic <a href="https://toml.io/fr/" target="_blank">TOML</a> knowledge_
 
 ## Proxy
 
-ArchiveTube support HTTP, HTTPS and SOCKS proxy
+ArchiveTube supports HTTP, HTTPS and SOCKS proxy
 
 ```toml
 [archive]
@@ -47,7 +47,7 @@ You can change the yt-dlp by adding a ytdlp_path argument to the archive section
 ytdlp_path = "/usr/local/bin/yt-dlp"
 ```
 
-Note: this can be used to add custom argument to yt-dlp by making a middleman bash script. This hasn't been tested tho, custom argument support will be added one day
+Note: this can be used to add custom arguments to yt-dlp by making a middleman bash script. This hasn't been tested though, custom argument support will be added one day
 
 ```bash
 yt-dlp --quiet "$@"

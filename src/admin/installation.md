@@ -14,7 +14,7 @@ mode = "password"
 password_hash = "bcrypt-password"
 ```
 
-Now you, need to start a container using Docker. You can find features to extend your configuration in the Admin guide's [features](./) and [extra configuration](./extra-config.md)
+Now you need to start a container using Docker. You can find features to extend your configuration in the Admin guide's [features](./) and [extra configuration](./extra-config.md)
 
 ## Running
 

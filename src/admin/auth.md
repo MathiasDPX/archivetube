@@ -1,10 +1,10 @@
-# Authentification
+# Authentication
 
 ArchiveTube supports 3 ways to authenticate: `oidc`, `password` and `none`
 
 ## Password
 
-For using password authentication, change the mode to `password` in your config and add/change the `password_hash` value to a bcrypt password. Storing the password in bcrypt ensure that if anyone get read access to the database they cannot easily decrypt the password.
+For using password authentication, change the mode to `password` in your config and add/change the `password_hash` value to a bcrypt password. Storing the password in bcrypt ensures that if anyone gets read access to the database they cannot easily decrypt the password.
 
 You can generate a bcrypt password online with <a href="https://bcrypt-generator.com/" target="_blank">bcrypt-generator.com</a> or in a terminal using <a href="https://httpd.apache.org/docs/current/programs/htpasswd.html" target="_blank">htpasswd</a>
 
@@ -12,12 +12,12 @@ You can generate a bcrypt password online with <a href="https://bcrypt-generator
 htpasswd -bnBC 12 "" password | tr -d ":"
 ```
 
-Replace `password` with your password. If you want extra security, increase the bcrypt cost (here 12) to something like 14 or even 16 but this will lead to slower login time (depend on your hardware)
+Replace `password` with your password. If you want extra security, increase the bcrypt cost (here 12) to something like 14 or even 16 but this will lead to slower login time (depends on your hardware)
 
 
 ## **O**pen**ID** **C**onnect
 
-If you want to use OIDC for authentifcation, you need to add these values to your config and set auth mode on `oidc`:
+If you want to use OIDC for authentication, you need to add these values to your config and set auth mode to `oidc`:
 
 ```toml
 oidc_issuer = "https://auth.example.com"
@@ -31,4 +31,4 @@ oidc_redirect_url = "https://yt.example.com/auth/callback"
 
 ## None
 
-This auth mode isn't recommended but can be used if you're using ArchiveTube locally or developping it
+This auth mode isn't recommended but can be used if you're using ArchiveTube locally or developing it

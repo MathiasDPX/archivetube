@@ -1,6 +1,6 @@
 # Timestamp link
 
-You can specify a timestamp in the URL by adding the `t` parameter representing the timestamp in second
+You can specify a timestamp in the URL by adding the `t` parameter representing the timestamp in seconds
 
 \\( t = seconds + (minutes \\cdot 60) + (hours \\cdot 3600) \\)
 
