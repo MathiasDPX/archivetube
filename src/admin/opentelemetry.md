@@ -1,6 +1,6 @@
 # Open Telemetry
 
-You can enable [OpenTelemetry](https://opentelemetry.io/) by specifying an endpoint in the config:
+You can enable <a href="https://opentelemetry.io/" target="_blank">OpenTelemetry</a> by specifying an endpoint in the config:
 
 ```toml
 [observability]

@@ -2,7 +2,7 @@
 
 The code for configuration can be found on <a href="https://github.com/MathiasDPX/archivetube/blob/main/internal/config/config.go" target="_blank">`internal/config/config.go`</a>
 
-_This page assume you have basic [TOML](https://toml.io/fr/) knowledge_
+_This page assume you have basic <a href="https://toml.io/fr/" target="_blank">TOML<a/> knowledge_
 
 ## Proxy
 
@@ -31,7 +31,7 @@ real_ip_header = "header"
 
 ## CORS
 
-If you want to use your archived videos on another site without making your data accessible to everyone, you can setup [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS). Default is set to `*`
+If you want to use your archived videos on another site without making your data accessible to everyone, you can setup <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS" target="_blank">CORS</a>. Default is set to `*`
 
 ```toml
 [server]

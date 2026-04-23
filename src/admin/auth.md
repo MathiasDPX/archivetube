@@ -6,7 +6,7 @@ ArchiveTube supports 3 ways to authenticate: `oidc`, `password` and `none`
 
 For using password authentication, change the mode to `password` in your config and add/change the `password_hash` value to a bcrypt password. Storing the password in bcrypt ensure that if anyone get read access to the database they cannot easily decrypt the password.
 
-You can generate a bcrypt password online with [bcrypt-generator.com](https://bcrypt-generator.com/) or in a terminal using [htpasswd](https://httpd.apache.org/docs/current/programs/htpasswd.html)
+You can generate a bcrypt password online with <a href="https://bcrypt-generator.com/" target="_blank">bcrypt-generator.com</a> or in a terminal using <a href="https://httpd.apache.org/docs/current/programs/htpasswd.html" target="_blank">htpasswd</a>
 
 ```bash
 htpasswd -bnBC 12 "" password | tr -d ":"

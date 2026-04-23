@@ -48,5 +48,5 @@ docker run -d \
 
 ### Podman
 
-You might be able to run ArchiveTube with [Podman](https://podman.io/) but this has not been tested yet.
+You might be able to run ArchiveTube with <a href="https://podman.io/" target="_blank">Podman</a> but this has not been tested yet.
 
