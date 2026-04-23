@@ -8,8 +8,11 @@ import (
 
 	"github.com/MathiasDPX/archivetube/internal/config"
 	_ "github.com/duckdb/duckdb-go/v2"
+	"go.opentelemetry.io/otel"
 	_ "modernc.org/sqlite"
 )
+
+var tracer = otel.Tracer("github.com/MathiasDPX/archivetube/internal/store")
 
 const migrationSQL = `
 CREATE SEQUENCE IF NOT EXISTS channels_id_seq START 1;

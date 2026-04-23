@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -9,7 +10,10 @@ import (
 	"github.com/MathiasDPX/archivetube/internal/domain"
 )
 
-func (s *Store) UpsertVideo(v *domain.Video) (int64, error) {
+func (s *Store) UpsertVideo(ctx context.Context, v *domain.Video) (int64, error) {
+	ctx, span := tracer.Start(ctx, "store.UpsertVideo")
+	defer span.End()
+
 	var id int64
 	row := s.db.QueryRow("SELECT id FROM videos WHERE youtube_video_id = ?", v.YoutubeVideoID)
 	err := row.Scan(&id)
@@ -64,7 +68,10 @@ func (s *Store) UpsertVideo(v *domain.Video) (int64, error) {
 	return id, nil
 }
 
-func (s *Store) GetVideoByYoutubeID(ytID string) (*domain.Video, error) {
+func (s *Store) GetVideoByYoutubeID(ctx context.Context, ytID string) (*domain.Video, error) {
+	ctx, span := tracer.Start(ctx, "store.GetVideoByYoutubeID")
+	defer span.End()
+
 	return s.scanVideo(s.db.QueryRow(`
 		SELECT v.id, v.youtube_video_id, v.channel_id, v.title, v.description,
 			v.duration_seconds, v.published_at, v.archived_at, v.webpage_url,
@@ -76,7 +83,10 @@ func (s *Store) GetVideoByYoutubeID(ytID string) (*domain.Video, error) {
 		WHERE v.youtube_video_id = ?`, ytID))
 }
 
-func (s *Store) GetVideoByID(id int64) (*domain.Video, error) {
+func (s *Store) GetVideoByID(ctx context.Context, id int64) (*domain.Video, error) {
+	ctx, span := tracer.Start(ctx, "store.GetVideoByID")
+	defer span.End()
+
 	return s.scanVideo(s.db.QueryRow(`
 		SELECT v.id, v.youtube_video_id, v.channel_id, v.title, v.description,
 			v.duration_seconds, v.published_at, v.archived_at, v.webpage_url,
@@ -137,7 +147,10 @@ func (s *Store) scanVideo(row *sql.Row) (*domain.Video, error) {
 	return v, nil
 }
 
-func (s *Store) ListVideos(query string, sort string, limit, offset int) ([]domain.Video, int, error) {
+func (s *Store) ListVideos(ctx context.Context, query string, sort string, limit, offset int) ([]domain.Video, int, error) {
+	ctx, span := tracer.Start(ctx, "store.ListVideos")
+	defer span.End()
+
 	orderDir := "DESC"
 	if sort == "asc" {
 		orderDir = "ASC"
@@ -191,7 +204,10 @@ func (s *Store) ListVideos(query string, sort string, limit, offset int) ([]doma
 	return videos, total, rows.Err()
 }
 
-func (s *Store) DeleteVideo(id int64) error {
+func (s *Store) DeleteVideo(ctx context.Context, id int64) error {
+	ctx, span := tracer.Start(ctx, "store.DeleteVideo")
+	defer span.End()
+
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -211,25 +227,37 @@ func (s *Store) DeleteVideo(id int64) error {
 	return tx.Commit()
 }
 
-func (s *Store) CountVideos() (int, error) {
+func (s *Store) CountVideos(ctx context.Context) (int, error) {
+	ctx, span := tracer.Start(ctx, "store.CountVideos")
+	defer span.End()
+
 	var count int
 	err := s.db.QueryRow("SELECT COUNT(*) FROM videos").Scan(&count)
 	return count, err
 }
 
-func (s *Store) SumArchiveSize() (int64, error) {
+func (s *Store) SumArchiveSize(ctx context.Context) (int64, error) {
+	ctx, span := tracer.Start(ctx, "store.SumArchiveSize")
+	defer span.End()
+
 	var size int64
 	err := s.db.QueryRow("SELECT COALESCE(SUM(file_size_bytes), 0) FROM videos").Scan(&size)
 	return size, err
 }
 
-func (s *Store) CountChannels() (int, error) {
+func (s *Store) CountChannels(ctx context.Context) (int, error) {
+	ctx, span := tracer.Start(ctx, "store.CountChannels")
+	defer span.End()
+
 	var count int
 	err := s.db.QueryRow("SELECT COUNT(*) FROM channels").Scan(&count)
 	return count, err
 }
 
-func (s *Store) ListVideosByChannel(channelID int64, limit, offset int) ([]domain.Video, int, error) {
+func (s *Store) ListVideosByChannel(ctx context.Context, channelID int64, limit, offset int) ([]domain.Video, int, error) {
+	ctx, span := tracer.Start(ctx, "store.ListVideosByChannel")
+	defer span.End()
+
 	var total int
 	if err := s.db.QueryRow("SELECT COUNT(*) FROM videos WHERE channel_id = ?", channelID).Scan(&total); err != nil {
 		return nil, 0, err

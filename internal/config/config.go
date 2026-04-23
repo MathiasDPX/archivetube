@@ -42,7 +42,8 @@ type SmartSearchConfig struct {
 }
 
 type ObservabilityConfig struct {
-	EnablePrometheus bool `toml:"prometheus"`
+	EnablePrometheus bool   `toml:"prometheus"`
+	OTelExporter     string `toml:"otel_exporter_otlp_endpoint"`
 }
 
 type Config struct {

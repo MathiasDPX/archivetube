@@ -2,12 +2,16 @@ package embedding
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/MathiasDPX/archivetube/internal/config"
+	"go.opentelemetry.io/otel"
 )
+
+var tracer = otel.Tracer("github.com/MathiasDPX/archivetube/internal/embedding")
 
 const (
 	dims = 384
@@ -19,7 +23,10 @@ type embeddingResponse struct {
 	} `json:"data"`
 }
 
-func GetEmbedding(config *config.SmartSearchConfig, text string) ([]float32, error) {
+func GetEmbedding(ctx context.Context, config *config.SmartSearchConfig, text string) ([]float32, error) {
+	ctx, span := tracer.Start(ctx, "embedding.GetEmbedding")
+	defer span.End()
+
 	body, err := json.Marshal(map[string]any{
 		"model":      config.Model,
 		"input":      text,
@@ -29,7 +36,7 @@ func GetEmbedding(config *config.SmartSearchConfig, text string) ([]float32, err
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", config.Backend, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, "POST", config.Backend, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/otel"
+
 	"github.com/MathiasDPX/archivetube/internal/archive"
 	"github.com/MathiasDPX/archivetube/internal/config"
 	"github.com/MathiasDPX/archivetube/internal/domain"
@@ -17,6 +20,8 @@ import (
 	"github.com/MathiasDPX/archivetube/internal/queue"
 	"github.com/MathiasDPX/archivetube/internal/store"
 )
+
+var tracer = otel.Tracer("github.com/MathiasDPX/archivetube/internal/web")
 
 type handlers struct {
 	config  *config.Config
@@ -66,6 +71,9 @@ type NotFoundData struct {
 }
 
 func (h *handlers) handleHome(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracer.Start(r.Context(), "handleHome")
+	defer span.End()
+
 	query := r.URL.Query().Get("q")
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	if page < 1 {
@@ -75,11 +83,13 @@ func (h *handlers) handleHome(w http.ResponseWriter, r *http.Request) {
 	offset := (page - 1) * perPage
 
 	if query != "" && h.config.SmartSearch.Enabled {
-		videos, err := h.smartSearch(query, perPage)
+		span.AddEvent("Searching with embedding")
+		videos, err := h.smartSearch(ctx, query, perPage)
 		if err != nil {
 			h.serverError(w, err)
 			return
 		}
+		span.AddEvent("Videos searched, rendering")
 		h.renderWithRequest(w, r, "home.tmpl", HomeData{
 			Videos:  videos,
 			Query:   query,
@@ -87,14 +97,17 @@ func (h *handlers) handleHome(w http.ResponseWriter, r *http.Request) {
 			Total:   len(videos),
 			PerPage: perPage,
 		})
+		span.AddEvent("Rendered")
 		return
 	}
 
-	videos, total, err := h.store.ListVideos(query, "desc", perPage, offset)
+	span.AddEvent("Searching")
+	videos, total, err := h.store.ListVideos(ctx, query, "desc", perPage, offset)
 	if err != nil {
 		h.serverError(w, err)
 		return
 	}
+	span.AddEvent("Videos searched, rendering")
 
 	h.renderWithRequest(w, r, "home.tmpl", HomeData{
 		Videos:  videos,
@@ -103,12 +116,16 @@ func (h *handlers) handleHome(w http.ResponseWriter, r *http.Request) {
 		Total:   total,
 		PerPage: perPage,
 	})
+	span.AddEvent("Rendered")
 }
 
 func (h *handlers) handleVideo(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracer.Start(r.Context(), "handleVideo")
+	defer span.End()
+
 	ytID := r.PathValue("id")
 
-	video, err := h.store.GetVideoByYoutubeID(ytID)
+	video, err := h.store.GetVideoByYoutubeID(ctx, ytID)
 	if err != nil {
 		h.serverError(w, err)
 		return
@@ -122,19 +139,19 @@ func (h *handlers) handleVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	chapters, err := h.store.GetChapters(video.ID)
+	chapters, err := h.store.GetChapters(ctx, video.ID)
 	if err != nil {
 		h.serverError(w, err)
 		return
 	}
 
-	subtitles, err := h.store.GetSubtitles(video.ID)
+	subtitles, err := h.store.GetSubtitles(ctx, video.ID)
 	if err != nil {
 		h.serverError(w, err)
 		return
 	}
 
-	channel, err := h.store.GetChannelByYoutubeID(video.ChannelYoutubeID)
+	channel, err := h.store.GetChannelByYoutubeID(ctx, video.ChannelYoutubeID)
 	if err != nil {
 		h.serverError(w, err)
 		return
@@ -149,7 +166,10 @@ func (h *handlers) handleVideo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) handleCreators(w http.ResponseWriter, r *http.Request) {
-	channels, err := h.store.ListChannels()
+	ctx, span := tracer.Start(r.Context(), "handleCreators")
+	defer span.End()
+
+	channels, err := h.store.ListChannels(ctx)
 	if err != nil {
 		h.serverError(w, err)
 		return
@@ -159,9 +179,12 @@ func (h *handlers) handleCreators(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) handleCreator(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracer.Start(r.Context(), "handleCreator")
+	defer span.End()
+
 	ytID := r.PathValue("id")
 
-	channel, err := h.store.GetChannelByYoutubeID(ytID)
+	channel, err := h.store.GetChannelByYoutubeID(ctx, ytID)
 	if err != nil {
 		h.serverError(w, err)
 		return
@@ -182,7 +205,7 @@ func (h *handlers) handleCreator(w http.ResponseWriter, r *http.Request) {
 	perPage := 24
 	offset := (page - 1) * perPage
 
-	videos, total, err := h.store.ListVideosByChannel(channel.ID, perPage, offset)
+	videos, total, err := h.store.ListVideosByChannel(ctx, channel.ID, perPage, offset)
 	if err != nil {
 		h.serverError(w, err)
 		return
@@ -198,9 +221,12 @@ func (h *handlers) handleCreator(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) handleDownload(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracer.Start(r.Context(), "handleDownload")
+	defer span.End()
+
 	ytID := r.PathValue("id")
 
-	video, err := h.store.GetVideoByYoutubeID(ytID)
+	video, err := h.store.GetVideoByYoutubeID(ctx, ytID)
 	if err != nil {
 		h.serverError(w, err)
 		return
@@ -225,6 +251,9 @@ func (h *handlers) handleArchivePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) handleArchiveSubmit(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracer.Start(r.Context(), "handleArchiveSubmit")
+	defer span.End()
+
 	if err := r.ParseForm(); err != nil {
 		h.serverError(w, err)
 		return
@@ -250,7 +279,7 @@ func (h *handlers) handleArchiveSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if ytID, err := archive.ExtractVideoID(url); err == nil {
-		if v, _ := h.store.GetVideoByYoutubeID(ytID); v != nil {
+		if v, _ := h.store.GetVideoByYoutubeID(ctx, ytID); v != nil {
 			h.queue.EnqueueAlreadyArchived(url)
 			http.Redirect(w, r, "/archive", http.StatusSeeOther)
 			return
@@ -267,6 +296,9 @@ func (h *handlers) handleQueueStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) handleAPIVideos(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracer.Start(r.Context(), "handleAPIVideos")
+	defer span.End()
+
 	query := r.URL.Query().Get("q")
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	if page < 1 {
@@ -276,7 +308,7 @@ func (h *handlers) handleAPIVideos(w http.ResponseWriter, r *http.Request) {
 	offset := (page - 1) * perPage
 
 	if query != "" && h.config.SmartSearch.Enabled {
-		videos, err := h.smartSearch(query, perPage)
+		videos, err := h.smartSearch(ctx, query, perPage)
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -293,7 +325,7 @@ func (h *handlers) handleAPIVideos(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	videos, total, err := h.store.ListVideos(query, "desc", perPage, offset)
+	videos, total, err := h.store.ListVideos(ctx, query, "desc", perPage, offset)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -311,9 +343,12 @@ func (h *handlers) handleAPIVideos(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) handleAPICreatorVideos(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracer.Start(r.Context(), "handleAPICreatorVideos")
+	defer span.End()
+
 	ytID := r.PathValue("id")
 
-	channel, err := h.store.GetChannelByYoutubeID(ytID)
+	channel, err := h.store.GetChannelByYoutubeID(ctx, ytID)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -334,7 +369,7 @@ func (h *handlers) handleAPICreatorVideos(w http.ResponseWriter, r *http.Request
 	perPage := 24
 	offset := (page - 1) * perPage
 
-	videos, total, err := h.store.ListVideosByChannel(channel.ID, perPage, offset)
+	videos, total, err := h.store.ListVideosByChannel(ctx, channel.ID, perPage, offset)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -352,9 +387,12 @@ func (h *handlers) handleAPICreatorVideos(w http.ResponseWriter, r *http.Request
 }
 
 func (h *handlers) handleDeleteVideo(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracer.Start(r.Context(), "handleDeleteVideo")
+	defer span.End()
+
 	ytID := r.PathValue("id")
 
-	video, err := h.store.GetVideoByYoutubeID(ytID)
+	video, err := h.store.GetVideoByYoutubeID(ctx, ytID)
 	if err != nil {
 		h.serverError(w, err)
 		return
@@ -370,34 +408,37 @@ func (h *handlers) handleDeleteVideo(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	subtitles, _ := h.store.GetSubtitles(video.ID)
+	subtitles, _ := h.store.GetSubtitles(ctx, video.ID)
 	for _, sub := range subtitles {
 		if sub.RelPath != "" {
 			os.Remove(filepath.Join(h.config.Archive.DataDir, sub.RelPath))
 		}
 	}
 
-	h.store.DeleteVideoVectors(video.YoutubeVideoID)
+	h.store.DeleteVideoVectors(ctx, video.YoutubeVideoID)
 
 	channelID := video.ChannelID
 
-	if err := h.store.DeleteVideo(video.ID); err != nil {
+	if err := h.store.DeleteVideo(ctx, video.ID); err != nil {
 		h.serverError(w, err)
 		return
 	}
 
-	count, err := h.store.CountVideosByChannel(channelID)
+	count, err := h.store.CountVideosByChannel(ctx, channelID)
 	if err == nil && count == 0 {
-		h.store.DeleteChannel(channelID)
+		h.store.DeleteChannel(ctx, channelID)
 	}
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (h *handlers) handleDeleteCreator(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracer.Start(r.Context(), "handleDeleteCreator")
+	defer span.End()
+
 	ytID := r.PathValue("id")
 
-	channel, err := h.store.GetChannelByYoutubeID(ytID)
+	channel, err := h.store.GetChannelByYoutubeID(ctx, ytID)
 	if err != nil {
 		h.serverError(w, err)
 		return
@@ -414,7 +455,7 @@ func (h *handlers) handleDeleteCreator(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := h.store.ClearChannelImages(channel.ID); err != nil {
+	if err := h.store.ClearChannelImages(ctx, channel.ID); err != nil {
 		h.serverError(w, err)
 		return
 	}
@@ -423,9 +464,12 @@ func (h *handlers) handleDeleteCreator(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) handleRefreshCreator(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracer.Start(r.Context(), "handleRefreshCreator")
+	defer span.End()
+
 	ytID := r.PathValue("id")
 
-	channel, err := h.store.GetChannelByYoutubeID(ytID)
+	channel, err := h.store.GetChannelByYoutubeID(ctx, ytID)
 	if err != nil {
 		h.serverError(w, err)
 		return
@@ -435,7 +479,7 @@ func (h *handlers) handleRefreshCreator(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := h.archive.RefreshChannelMetadata(r.Context(), channel); err != nil {
+	if err := h.archive.RefreshChannelMetadata(ctx, channel); err != nil {
 		log.Printf("refresh creator metadata: %v", err)
 	}
 
@@ -448,6 +492,9 @@ func (h *handlers) handleQueueClear(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) handlePlaylistFetch(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracer.Start(r.Context(), "handlePlaylistFetch")
+	defer span.End()
+
 	url := r.URL.Query().Get("url")
 	if url == "" {
 		w.Header().Set("Content-Type", "application/json")
@@ -456,7 +503,7 @@ func (h *handlers) handlePlaylistFetch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entries, err := h.archive.FetchPlaylistEntries(r.Context(), url)
+	entries, err := h.archive.FetchPlaylistEntries(ctx, url)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -469,6 +516,9 @@ func (h *handlers) handlePlaylistFetch(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) handleArchiveBatch(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracer.Start(r.Context(), "handleArchiveBatch")
+	defer span.End()
+
 	var body struct {
 		URLs    []string `json:"urls"`
 		Quality string   `json:"quality"`
@@ -486,7 +536,7 @@ func (h *handlers) handleArchiveBatch(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if ytID, err := archive.ExtractVideoID(url); err == nil {
-			if v, _ := h.store.GetVideoByYoutubeID(ytID); v != nil {
+			if v, _ := h.store.GetVideoByYoutubeID(ctx, ytID); v != nil {
 				h.queue.EnqueueAlreadyArchived(url)
 				continue
 			}
@@ -525,12 +575,12 @@ func absoluteRequestURL(r *http.Request) string {
 	return scheme + "://" + host + r.URL.RequestURI()
 }
 
-func (h *handlers) smartSearch(query string, limit int) ([]domain.Video, error) {
-	queryVec, err := embedding.GetEmbedding(&h.config.SmartSearch, query)
+func (h *handlers) smartSearch(ctx context.Context, query string, limit int) ([]domain.Video, error) {
+	queryVec, err := embedding.GetEmbedding(ctx, &h.config.SmartSearch, query)
 	if err != nil {
 		return nil, fmt.Errorf("embedding query: %w", err)
 	}
-	return h.store.SearchVideosSmart(queryVec, limit)
+	return h.store.SearchVideosSmart(ctx, queryVec, limit)
 }
 
 func (h *handlers) serverError(w http.ResponseWriter, err error) {

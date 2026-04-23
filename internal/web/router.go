@@ -1,10 +1,14 @@
 package web
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"path/filepath"
 	"strings"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 
 	"github.com/MathiasDPX/archivetube/internal/archive"
 	"github.com/MathiasDPX/archivetube/internal/config"
@@ -63,7 +67,21 @@ func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service,
 		mux.Handle("GET /metrics", metrics.Handler())
 	}
 
-	return corsMiddleware(mux, cfg.Server.CorsHost)
+	return otelMiddleware(corsMiddleware(mux, cfg.Server.CorsHost))
+}
+
+func otelMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/data/") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		ctx := otel.GetTextMapPropagator().Extract(r.Context(), propagation.HeaderCarrier(r.Header))
+		ctx, span := tracer.Start(ctx, fmt.Sprintf("%s %s", r.Method, r.URL.Path))
+		defer span.End()
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 func corsMiddleware(next http.Handler, origin string) http.Handler {

@@ -1,8 +1,15 @@
 package store
 
-import "github.com/MathiasDPX/archivetube/internal/domain"
+import (
+	"context"
 
-func (s *Store) ReplaceSubtitles(videoID int64, subs []domain.Subtitle) error {
+	"github.com/MathiasDPX/archivetube/internal/domain"
+)
+
+func (s *Store) ReplaceSubtitles(ctx context.Context, videoID int64, subs []domain.Subtitle) error {
+	ctx, span := tracer.Start(ctx, "store.ReplaceSubtitles")
+	defer span.End()
+
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -30,7 +37,10 @@ func (s *Store) ReplaceSubtitles(videoID int64, subs []domain.Subtitle) error {
 	return tx.Commit()
 }
 
-func (s *Store) GetSubtitles(videoID int64) ([]domain.Subtitle, error) {
+func (s *Store) GetSubtitles(ctx context.Context, videoID int64) ([]domain.Subtitle, error) {
+	ctx, span := tracer.Start(ctx, "store.GetSubtitles")
+	defer span.End()
+
 	rows, err := s.db.Query(`
 		SELECT id, video_id, language_code, language_name, ext, rel_path, is_default
 		FROM video_subtitles

@@ -1,12 +1,16 @@
 package store
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/MathiasDPX/archivetube/internal/domain"
 )
 
-func (s *Store) UpsertVideoVectors(youtubeVideoID string, titleVec, descriptionVec []float32) error {
+func (s *Store) UpsertVideoVectors(ctx context.Context, youtubeVideoID string, titleVec, descriptionVec []float32) error {
+	ctx, span := tracer.Start(ctx, "store.UpsertVideoVectors")
+	defer span.End()
+
 	titleStr := float32SliceToSQL(titleVec)
 	descStr := float32SliceToSQL(descriptionVec)
 
@@ -22,7 +26,10 @@ func (s *Store) UpsertVideoVectors(youtubeVideoID string, titleVec, descriptionV
 	return err
 }
 
-func (s *Store) SearchVideosSmart(queryVec []float32, limit int) ([]domain.Video, error) {
+func (s *Store) SearchVideosSmart(ctx context.Context, queryVec []float32, limit int) ([]domain.Video, error) {
+	ctx, span := tracer.Start(ctx, "store.SearchVideosSmart")
+	defer span.End()
+
 	vecStr := float32SliceToSQL(queryVec)
 
 	sql := fmt.Sprintf(`
@@ -78,7 +85,10 @@ func (s *Store) SearchVideosSmart(queryVec []float32, limit int) ([]domain.Video
 	return videos, rows.Err()
 }
 
-func (s *Store) DeleteVideoVectors(youtubeVideoID string) error {
+func (s *Store) DeleteVideoVectors(ctx context.Context, youtubeVideoID string) error {
+	ctx, span := tracer.Start(ctx, "store.DeleteVideoVectors")
+	defer span.End()
+
 	_, err := s.db.Exec("DELETE FROM videos_vectors WHERE youtube_video_id = ?", youtubeVideoID)
 	return err
 }

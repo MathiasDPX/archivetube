@@ -15,11 +15,26 @@ import (
 	"github.com/MathiasDPX/archivetube/internal/metrics"
 	"github.com/MathiasDPX/archivetube/internal/queue"
 	"github.com/MathiasDPX/archivetube/internal/store"
+	"github.com/MathiasDPX/archivetube/internal/traces"
 	"github.com/MathiasDPX/archivetube/internal/web"
 )
 
 func main() {
+	ctx := context.Background()
+
 	cfg := config.Load("config.toml")
+
+	if cfg.Observability.OTelExporter != "" {
+		tracer, err := traces.Init(cfg.Observability, ctx)
+		if err != nil {
+			log.Fatalf("initializing tracer: %v", err)
+		}
+		defer func() {
+			if err := tracer(ctx); err != nil {
+				log.Printf("shutting down tracer: %v", err)
+			}
+		}()
+	}
 
 	if err := os.MkdirAll(cfg.Archive.DataDir, 0o755); err != nil {
 		log.Fatalf("creating data dir: %v", err)
@@ -32,14 +47,14 @@ func main() {
 	}
 	defer st.Close()
 
-	if n, err := st.CountVideos(); err == nil {
+	if n, err := st.CountVideos(ctx); err == nil {
 		metrics.SetVideosTotal(n)
 		metrics.SetArchivedVideosTotal(n)
 	}
-	if n, err := st.CountChannels(); err == nil {
+	if n, err := st.CountChannels(ctx); err == nil {
 		metrics.SetChannelsTotal(n)
 	}
-	if n, err := st.SumArchiveSize(); err == nil {
+	if n, err := st.SumArchiveSize(ctx); err == nil {
 		metrics.SetArchiveSizeBytes(n)
 	}
 
@@ -78,6 +93,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Printf("server shutdown error: %v", err)
 	}

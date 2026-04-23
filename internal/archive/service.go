@@ -16,12 +16,16 @@ import (
 	"syscall"
 	"time"
 
+	"go.opentelemetry.io/otel"
+
 	"github.com/MathiasDPX/archivetube/internal/config"
 	"github.com/MathiasDPX/archivetube/internal/domain"
 	"github.com/MathiasDPX/archivetube/internal/embedding"
 	"github.com/MathiasDPX/archivetube/internal/metrics"
 	"github.com/MathiasDPX/archivetube/internal/store"
 )
+
+var tracer = otel.Tracer("github.com/MathiasDPX/archivetube/internal/archive")
 
 type Service struct {
 	YtDlpPath   string
@@ -98,11 +102,14 @@ func qualityToFormat(quality string) string {
 }
 
 func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) error {
+	ctx, span := tracer.Start(ctx, "archive.ArchiveURL")
+	defer span.End()
+
 	ytID, err := ExtractVideoID(url)
 	if err != nil {
 		return fmt.Errorf("extracting video ID: %w", err)
 	}
-	existing, err := s.Store.GetVideoByYoutubeID(ytID)
+	existing, err := s.Store.GetVideoByYoutubeID(ctx, ytID)
 	if err != nil {
 		return fmt.Errorf("checking existing video: %w", err)
 	}
@@ -150,8 +157,10 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 
 	args = append(args, url)
 
+	ctx, dlSpan := tracer.Start(ctx, "archive.yt-dlp")
 	cmd := exec.CommandContext(ctx, s.YtDlpPath, args...)
 	output, err := cmd.CombinedOutput()
+	dlSpan.End()
 	if err != nil {
 		return fmt.Errorf("yt-dlp failed: %w\n%s", err, string(output))
 	}
@@ -254,7 +263,7 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 		ThumbnailPath:    avatarRel,
 		BannerPath:       bannerRel,
 	}
-	channelID, err := s.Store.UpsertChannel(channel)
+	channelID, err := s.Store.UpsertChannel(ctx, channel)
 	if err != nil {
 		return fmt.Errorf("upserting channel: %w", err)
 	}
@@ -275,7 +284,7 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 		Height:           info.Height,
 		FileSizeBytes:    fileSizeBytes,
 	}
-	videoID, err := s.Store.UpsertVideo(video)
+	videoID, err := s.Store.UpsertVideo(ctx, video)
 	if err != nil {
 		return fmt.Errorf("upserting video: %w", err)
 	}
@@ -290,7 +299,7 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 			EndSeconds:   ch.EndTime,
 		})
 	}
-	if err := s.Store.ReplaceChapters(videoID, chapters); err != nil {
+	if err := s.Store.ReplaceChapters(ctx, videoID, chapters); err != nil {
 		return fmt.Errorf("replacing chapters: %w", err)
 	}
 
@@ -303,21 +312,21 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 			Ext:          "vtt",
 		})
 	}
-	if err := s.Store.ReplaceSubtitles(videoID, domainSubs); err != nil {
+	if err := s.Store.ReplaceSubtitles(ctx, videoID, domainSubs); err != nil {
 		return fmt.Errorf("replacing subtitles: %w", err)
 	}
 
 	if s.SmartSearch.Enabled {
-		titleVec, err := embedding.GetEmbedding(s.SmartSearch, info.Title)
+		titleVec, err := embedding.GetEmbedding(ctx, s.SmartSearch, info.Title)
 		if err != nil {
 			log.Printf("embedding title for %s: %v", info.ID, err)
 		}
-		descVec, err := embedding.GetEmbedding(s.SmartSearch, info.Description)
+		descVec, err := embedding.GetEmbedding(ctx, s.SmartSearch, info.Description)
 		if err != nil {
 			log.Printf("embedding description for %s: %v", info.ID, err)
 		}
 		if titleVec != nil && descVec != nil {
-			if err := s.Store.UpsertVideoVectors(info.ID, titleVec, descVec); err != nil {
+			if err := s.Store.UpsertVideoVectors(ctx, info.ID, titleVec, descVec); err != nil {
 				log.Printf("storing vectors for %s: %v", info.ID, err)
 			}
 		}
@@ -496,6 +505,9 @@ func (s *Service) fetchChannelImages(ctx context.Context, channelDir, channelURL
 }
 
 func (s *Service) RefreshChannelMetadata(ctx context.Context, ch *domain.Channel) error {
+	ctx, span := tracer.Start(ctx, "archive.RefreshChannelMetadata")
+	defer span.End()
+
 	channelDir := filepath.Join(s.DataDir, "media", "channels", ch.YoutubeChannelID)
 	if err := os.MkdirAll(channelDir, 0o755); err != nil {
 		return fmt.Errorf("creating channel dir: %w", err)
@@ -550,7 +562,7 @@ func (s *Service) RefreshChannelMetadata(ctx context.Context, ch *domain.Channel
 	ch.ThumbnailPath = avatarRel
 	ch.BannerPath = bannerRel
 
-	_, err := s.Store.UpsertChannel(ch)
+	_, err := s.Store.UpsertChannel(ctx, ch)
 	return err
 }
 
@@ -576,6 +588,9 @@ type PlaylistEntry struct {
 }
 
 func (s *Service) FetchPlaylistEntries(ctx context.Context, url string) ([]PlaylistEntry, error) {
+	ctx, span := tracer.Start(ctx, "archive.FetchPlaylistEntries")
+	defer span.End()
+
 	args := []string{
 		"--flat-playlist",
 		"--dump-json",

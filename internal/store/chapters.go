@@ -1,8 +1,15 @@
 package store
 
-import "github.com/MathiasDPX/archivetube/internal/domain"
+import (
+	"context"
 
-func (s *Store) ReplaceChapters(videoID int64, chapters []domain.Chapter) error {
+	"github.com/MathiasDPX/archivetube/internal/domain"
+)
+
+func (s *Store) ReplaceChapters(ctx context.Context, videoID int64, chapters []domain.Chapter) error {
+	ctx, span := tracer.Start(ctx, "store.ReplaceChapters")
+	defer span.End()
+
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -26,7 +33,10 @@ func (s *Store) ReplaceChapters(videoID int64, chapters []domain.Chapter) error 
 	return tx.Commit()
 }
 
-func (s *Store) GetChapters(videoID int64) ([]domain.Chapter, error) {
+func (s *Store) GetChapters(ctx context.Context, videoID int64) ([]domain.Chapter, error) {
+	ctx, span := tracer.Start(ctx, "store.GetChapters")
+	defer span.End()
+
 	rows, err := s.db.Query(`
 		SELECT id, video_id, position, title, start_seconds, end_seconds
 		FROM video_chapters
