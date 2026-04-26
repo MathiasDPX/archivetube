@@ -1,6 +1,28 @@
+window.addEventListener("beforeunload", function() {
+    var video = document.querySelector('video');
+    if (!video) return;
+
+    var progresses = JSON.parse(window.localStorage.getItem("video_progresses"));
+    if (!progresses || typeof progresses != "object") {
+        progresses = {};
+    }
+
+    const videoId = video.dataset.videoId;
+    const videoTs = video.currentTime
+
+    if (videoId && videoTs != 0) {
+        progresses[videoId] = videoTs;
+        window.localStorage.setItem("video_progresses", JSON.stringify(progresses));
+    }
+})
+
 document.addEventListener('DOMContentLoaded', function () {
     var video = document.querySelector('video');
     if (!video) return;
+    
+
+    const videoId = video.dataset.videoId;
+    const channelId = video.dataset.channelId;
 
     let params = new URLSearchParams(document.location.search);
     var chapters = Array.from(document.querySelectorAll('.chapter-item'));
@@ -23,6 +45,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    if (params.get('t') == null) {
+        var progresses = JSON.parse(window.localStorage.getItem("video_progresses"));
+        progress = progresses[videoId];
+
+        if (progress !== null) {
+            video.currentTime = progress;
+        }
+    }
+
     try {
         const timestamp = params.get('t');
         if (timestamp != null) {
@@ -36,9 +67,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const videoTitle = document.getElementById('video-title').innerText;
         const channelName = document.getElementById('channel-name').innerText;
         const channelAvatarURL = document.getElementById('channel-avatar').src;
-
-        const videoId = video['data-video-id']
-        const channelId = video['data-channel-id']
 
         metadata = {
             title: videoTitle,
