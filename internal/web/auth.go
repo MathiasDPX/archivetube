@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -45,18 +46,24 @@ func validSession(token string) bool {
 	return ok
 }
 
-func deleteSession(token string) {
-	sessionsMu.Lock()
-	delete(sessions, token)
-	sessionsMu.Unlock()
-}
-
 func isLoggedIn(r *http.Request) bool {
 	c, err := r.Cookie(sessionCookieName)
 	if err != nil {
 		return false
 	}
 	return validSession(c.Value)
+}
+
+func isBot(r *http.Request) (bool, string) {
+	h := r.Header.Get("Authorization")
+	if h == "" {
+		return false, ""
+	}
+	token := strings.TrimSpace(strings.TrimPrefix(h, "Bearer "))
+	if token == "" {
+		return false, ""
+	}
+	return true, token
 }
 
 func (h *handlers) getRealIp(r *http.Request) string {
@@ -108,17 +115,40 @@ func (h *handlers) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 }
 
 // middleware for unauthenticated API requests
-func (h *handlers) requireAuthAPI(next http.HandlerFunc) http.HandlerFunc {
+func (h *handlers) requireAuthAPI(next http.HandlerFunc, requiredPermission config.ApiPermission) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !h.authEnabled() {
 			next(w, r)
 			return
 		}
-		if !isLoggedIn(r) {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+
+		if isLoggedIn(r) {
+			next(w, r)
 			return
 		}
-		next(w, r)
+
+		bot, token := isBot(r)
+		if bot {
+			var client *config.APIClientConfig
+			for _, c := range h.config.API {
+				if c.Key != "" && c.Key == token {
+					client = c
+					break
+				}
+			}
+			if client == nil {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+			if !client.HasPermission(requiredPermission) {
+				http.Error(w, "Forbidden", http.StatusForbidden)
+				return
+			}
+			next(w, r)
+			return
+		}
+
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 	}
 }
 
@@ -170,20 +200,6 @@ func (h *handlers) handleLoginSubmit(w http.ResponseWriter, r *http.Request) {
 	})
 
 	http.Redirect(w, r, "/archive", http.StatusSeeOther)
-}
-
-func (h *handlers) handleLogout(w http.ResponseWriter, r *http.Request) {
-	if c, err := r.Cookie(sessionCookieName); err == nil {
-		deleteSession(c.Value)
-	}
-	http.SetCookie(w, &http.Cookie{
-		Name:     sessionCookieName,
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-	})
-	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 // --- OIDC auth ---

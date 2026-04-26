@@ -163,7 +163,7 @@ archiveBtn.addEventListener("click", function () {
     archiveBtn.disabled = true;
     archiveBtn.textContent = "Adding…";
 
-    fetch("/archive/batch", {
+    fetch("/api/archive/batch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ urls: urls, quality: qualitySelect ? qualitySelect.value : "" })

@@ -1,10 +1,44 @@
 package config
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/BurntSushi/toml"
 )
+
+type ApiPermission string
+
+const (
+	PermAll     ApiPermission = "*"
+	PermDelete  ApiPermission = "delete"
+	PermArchive ApiPermission = "archive"
+	PermRefresh ApiPermission = "refresh"
+)
+
+var validPermissions = map[ApiPermission]struct{}{
+	PermAll:     {},
+	PermDelete:  {},
+	PermArchive: {},
+	PermRefresh: {},
+}
+
+type APIClientConfig struct {
+	Key         string            `toml:"key"`
+	Permissions apiPermissionList `toml:"-"`
+	RawPerms    interface{}       `toml:"permissions"`
+}
+
+type apiPermissionList []ApiPermission
+
+func (c *APIClientConfig) HasPermission(p ApiPermission) bool {
+	for _, perm := range c.Permissions {
+		if perm == PermAll || perm == p {
+			return true
+		}
+	}
+	return false
+}
 
 type ServerConfig struct {
 	ListenAddr   string `toml:"listen_addr"`
@@ -47,12 +81,13 @@ type ObservabilityConfig struct {
 }
 
 type Config struct {
-	Server        ServerConfig        `toml:"server"`
-	Archive       ArchiveConfig       `toml:"archive"`
-	Auth          AuthConfig          `toml:"auth"`
-	Observability ObservabilityConfig `toml:"observability"`
-	SmartSearch   SmartSearchConfig   `toml:"smart_search"`
-	Dearrow       DearrowConfig       `toml:"dearrow"`
+	Server        ServerConfig                `toml:"server"`
+	Archive       ArchiveConfig               `toml:"archive"`
+	Auth          AuthConfig                  `toml:"auth"`
+	Observability ObservabilityConfig         `toml:"observability"`
+	SmartSearch   SmartSearchConfig           `toml:"smart_search"`
+	Dearrow       DearrowConfig               `toml:"dearrow"`
+	API           map[string]*APIClientConfig `toml:"api"`
 }
 
 func Load(path string) *Config {
@@ -84,5 +119,42 @@ func Load(path string) *Config {
 		log.Fatalf("loading config file %s: %v", path, err)
 	}
 
+	for name, client := range c.API {
+		perms, err := parsePermissions(client.RawPerms)
+		if err != nil {
+			log.Fatalf("api client %q: %v", name, err)
+		}
+		client.Permissions = perms
+	}
+
 	return c
+}
+
+func parsePermissions(raw interface{}) ([]ApiPermission, error) {
+	switch v := raw.(type) {
+	case string:
+		p := ApiPermission(v)
+		if _, ok := validPermissions[p]; !ok {
+			return nil, fmt.Errorf("invalid permission %q", v)
+		}
+		return []ApiPermission{p}, nil
+	case []interface{}:
+		perms := make([]ApiPermission, 0, len(v))
+		for _, elem := range v {
+			s, ok := elem.(string)
+			if !ok {
+				return nil, fmt.Errorf("permission must be a string, got %T", elem)
+			}
+			p := ApiPermission(s)
+			if _, ok := validPermissions[p]; !ok {
+				return nil, fmt.Errorf("invalid permission %q", s)
+			}
+			perms = append(perms, p)
+		}
+		return perms, nil
+	case nil:
+		return nil, nil
+	default:
+		return nil, fmt.Errorf("permissions must be a string or array, got %T", raw)
+	}
 }

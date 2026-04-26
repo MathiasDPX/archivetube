@@ -1,0 +1,496 @@
+openapi: 3.1.0
+info:
+  title: ArchiveTube API
+  description: |
+    HTTP JSON API for the ArchiveTube YouTube archiver.
+
+    All endpoints below return non-HTML responses (JSON, file downloads, or
+    redirects). HTML pages served by the application (`/`, `/videos/{id}`,
+    `/creators`, `/creators/{id}`, `/archive`, `/login`, `/auth/callback`) are
+    intentionally not documented here.
+  version: "1.0.0"
+  license:
+    name: See repository
+    url: https://github.com/MathiasDPX/archivetube
+
+servers:
+  - url: /
+    description: Same-origin server
+
+tags:
+  - name: videos
+    description: Video resources
+  - name: creators
+    description: Channel (creator) resources
+  - name: queue
+    description: Archive job queue
+  - name: archive
+    description: Archive operations
+  - name: playlist
+    description: Playlist inspection (yt-dlp)
+
+security:
+  - bearerAuth: []
+  - sessionCookie: []
+  - {}
+
+paths:
+  /api/videos:
+    get:
+      tags: [videos]
+      summary: List archived videos
+      description: |
+        Returns a paginated list of archived videos. When `q` is provided and
+        smart search is enabled in the server config, results are ranked by
+        embedding similarity (in that case `page` and `total` reflect the
+        single-page result set).
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/QueryParam'
+        - $ref: '#/components/parameters/PageParam'
+      responses:
+        '200':
+          description: Paginated videos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoList'
+        '500':
+          $ref: '#/components/responses/JSONError'
+
+  /api/videos/{id}/download:
+    get:
+      tags: [videos]
+      summary: Download the archived video file
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/YoutubeVideoId'
+      responses:
+        '200':
+          description: Video file stream
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: attachment; filename="My Video.mp4"
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Video not found
+
+  /api/videos/{id}/delete:
+    post:
+      tags: [videos]
+      summary: Delete an archived video
+      description: |
+        Removes the video file, thumbnail, info JSON, subtitles and database
+        rows. If the parent channel becomes empty, it is also deleted.
+      parameters:
+        - $ref: '#/components/parameters/YoutubeVideoId'
+      responses:
+        '303':
+          description: Redirect to `/`
+          headers:
+            Location:
+              schema:
+                type: string
+                example: /
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Video not found
+
+  /api/creators/{id}/videos:
+    get:
+      tags: [creators]
+      summary: List videos for a creator
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/YoutubeChannelId'
+        - $ref: '#/components/parameters/PageParam'
+      responses:
+        '200':
+          description: Paginated videos for the channel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoList'
+        '404':
+          $ref: '#/components/responses/JSONNotFound'
+        '500':
+          $ref: '#/components/responses/JSONError'
+
+  /api/creators/{id}/delete:
+    post:
+      tags: [creators]
+      summary: Clear creator avatar and banner
+      description: Removes locally cached avatar and banner files for the channel.
+      parameters:
+        - $ref: '#/components/parameters/YoutubeChannelId'
+      responses:
+        '303':
+          description: Redirect to `/creators/{id}`
+          headers:
+            Location:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Channel not found
+
+  /api/creators/{id}/refresh:
+    post:
+      tags: [creators]
+      summary: Refresh creator metadata from YouTube
+      parameters:
+        - $ref: '#/components/parameters/YoutubeChannelId'
+      responses:
+        '303':
+          description: Redirect to `/creators/{id}`
+          headers:
+            Location:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Channel not found
+
+  /api/queue:
+    get:
+      tags: [queue]
+      summary: List queued archive jobs
+      responses:
+        '200':
+          description: Current jobs in the queue
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Job'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/queue/clear:
+    post:
+      tags: [queue]
+      summary: Clear finished jobs from the queue
+      description: |
+        Removes jobs in `done`, `error` or `already_archived` state. This
+        endpoint requires a logged-in session (cookie); bearer tokens are not
+        accepted.
+      security:
+        - sessionCookie: []
+      responses:
+        '303':
+          description: Redirect to `/archive`
+          headers:
+            Location:
+              schema:
+                type: string
+                example: /archive
+
+  /api/archive/batch:
+    post:
+      tags: [archive]
+      summary: Enqueue multiple URLs for archiving
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [urls]
+              properties:
+                urls:
+                  type: array
+                  items:
+                    type: string
+                    format: uri
+                  example:
+                    - https://www.youtube.com/watch?v=dQw4w9WgXcQ
+                    - https://www.youtube.com/watch?v=oHg5SJYRHA0
+                quality:
+                  type: string
+                  description: yt-dlp quality selector (e.g. `1080`, `720`, `best`)
+                  example: "1080"
+      responses:
+        '200':
+          description: Jobs enqueued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+        '400':
+          description: Bad request body
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/playlist:
+    get:
+      tags: [playlist]
+      summary: Resolve a playlist or channel into video entries
+      description: Uses `yt-dlp --flat-playlist` to enumerate videos.
+      parameters:
+        - in: query
+          name: url
+          required: true
+          schema:
+            type: string
+            format: uri
+          description: A YouTube playlist or channel URL
+      responses:
+        '200':
+          description: Playlist entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlaylistEntry'
+        '400':
+          $ref: '#/components/responses/JSONError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/JSONError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        API key configured under the `[[api]]` table in `config.toml`. The key
+        must have the appropriate permission for the route (`archive`,
+        `delete`, `refresh`).
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: archivetube_session
+      description: Set by `POST /login` (HTML page).
+
+  parameters:
+    YoutubeVideoId:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+      description: YouTube video ID (e.g. `dQw4w9WgXcQ`)
+
+    YoutubeChannelId:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+      description: YouTube channel ID (e.g. `UCuAXFkgsw1L7xaCfnd5JJOw`)
+
+    PageParam:
+      in: query
+      name: page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+
+    QueryParam:
+      in: query
+      name: q
+      required: false
+      schema:
+        type: string
+      description: Free-text search query
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: Unauthorized
+    Forbidden:
+      description: Caller lacks the required permission
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: Forbidden
+    JSONError:
+      description: Generic JSON error envelope
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    JSONNotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+    VideoList:
+      type: object
+      properties:
+        videos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Video'
+        page:
+          type: integer
+        total:
+          type: integer
+        perPage:
+          type: integer
+
+    Video:
+      type: object
+      description: |
+        Note: JSON keys are PascalCase because the Go struct does not declare
+        explicit JSON tags.
+      properties:
+        ID:
+          type: integer
+          format: int64
+        YoutubeVideoID:
+          type: string
+        ChannelID:
+          type: integer
+          format: int64
+        Title:
+          type: string
+        Description:
+          type: string
+        DurationSeconds:
+          type: integer
+        PublishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        ArchivedAt:
+          type: string
+          format: date-time
+        WebpageURL:
+          type: string
+          format: uri
+        VideoRelPath:
+          type: string
+        VideoExt:
+          type: string
+        ThumbnailRelPath:
+          type: string
+        InfoJSONRelPath:
+          type: string
+        FileSizeBytes:
+          type: integer
+          format: int64
+        Width:
+          type: integer
+        Height:
+          type: integer
+        ChannelName:
+          type: string
+        ChannelYoutubeID:
+          type: string
+
+    Channel:
+      type: object
+      description: |
+        Note: JSON keys are PascalCase because the Go struct does not declare
+        explicit JSON tags.
+      properties:
+        ID:
+          type: integer
+          format: int64
+        YoutubeChannelID:
+          type: string
+        Handle:
+          type: string
+        Name:
+          type: string
+        URL:
+          type: string
+          format: uri
+        Description:
+          type: string
+        ThumbnailPath:
+          type: string
+        BannerPath:
+          type: string
+        CreatedAt:
+          type: string
+          format: date-time
+        UpdatedAt:
+          type: string
+          format: date-time
+
+    Job:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+          format: uri
+        quality:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, done, error, already_archived]
+        error:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    PlaylistEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        thumbnail:
+          type: string
+          format: uri
+        duration:
+          type: number
+          format: double
+        url:
+          type: string
+          format: uri
+        release_date:
+          type: string
+        is_short:
+          type: boolean

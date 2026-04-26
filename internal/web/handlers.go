@@ -515,6 +515,10 @@ func (h *handlers) handlePlaylistFetch(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(entries)
 }
 
+func (h *handlers) handleOpenAPI(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, filepath.Join("web", "openapi.yml"))
+}
+
 func (h *handlers) handleArchiveBatch(w http.ResponseWriter, r *http.Request) {
 	ctx, span := tracer.Start(r.Context(), "handleArchiveBatch")
 	defer span.End()

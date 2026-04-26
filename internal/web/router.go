@@ -38,29 +38,31 @@ func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service,
 	// data files served from DataDir
 	mux.Handle("GET /data/", http.StripPrefix("/data/", dearrowThumbnail(neuter(http.FileServer(http.Dir(cfg.Archive.DataDir))), h.config.Dearrow)))
 
-	// auth
+	// auth pages (HTML)
 	mux.HandleFunc("GET /login", h.handleLoginPage)
 	mux.HandleFunc("POST /login", h.handleLoginSubmit)
-	mux.HandleFunc("POST /logout", h.handleLogout)
 	mux.HandleFunc("GET /auth/callback", h.handleOIDCCallback)
 
-	// pages
+	// HTML pages
 	mux.HandleFunc("GET /{$}", h.handleHome)
 	mux.HandleFunc("GET /videos/{id}", h.handleVideo)
 	mux.HandleFunc("GET /creators", h.handleCreators)
 	mux.HandleFunc("GET /creators/{id}", h.handleCreator)
-	mux.HandleFunc("GET /download/{id}", h.handleDownload)
-	mux.HandleFunc("POST /videos/{id}/delete", h.requireAuth(h.handleDeleteVideo))
-	mux.HandleFunc("POST /creators/{id}/delete", h.requireAuth(h.handleDeleteCreator))
-	mux.HandleFunc("POST /creators/{id}/refresh", h.requireAuth(h.handleRefreshCreator))
 	mux.HandleFunc("GET /archive", h.requireAuth(h.handleArchivePage))
 	mux.HandleFunc("POST /archive", h.requireAuth(h.handleArchiveSubmit))
+
+	// API
 	mux.HandleFunc("GET /api/videos", h.handleAPIVideos)
+	mux.HandleFunc("GET /api/videos/{id}/download", h.handleDownload)
+	mux.HandleFunc("POST /api/videos/{id}/delete", h.requireAuthAPI(h.handleDeleteVideo, config.PermDelete))
 	mux.HandleFunc("GET /api/creators/{id}/videos", h.handleAPICreatorVideos)
-	mux.HandleFunc("GET /api/queue", h.requireAuthAPI(h.handleQueueStatus))
-	mux.HandleFunc("POST /archive/clear", h.requireAuth(h.handleQueueClear))
-	mux.HandleFunc("GET /api/playlist", h.requireAuthAPI(h.handlePlaylistFetch))
-	mux.HandleFunc("POST /archive/batch", h.requireAuthAPI(h.handleArchiveBatch))
+	mux.HandleFunc("POST /api/creators/{id}/delete", h.requireAuthAPI(h.handleDeleteCreator, config.PermDelete))
+	mux.HandleFunc("POST /api/creators/{id}/refresh", h.requireAuthAPI(h.handleRefreshCreator, config.PermRefresh))
+	mux.HandleFunc("GET /api/queue", h.requireAuthAPI(h.handleQueueStatus, config.PermArchive))
+	mux.HandleFunc("POST /api/queue/clear", h.requireAuth(h.handleQueueClear))
+	mux.HandleFunc("GET /api/playlist", h.requireAuthAPI(h.handlePlaylistFetch, config.PermArchive))
+	mux.HandleFunc("POST /api/archive/batch", h.requireAuthAPI(h.handleArchiveBatch, config.PermArchive))
+	mux.HandleFunc("GET /openapi.yml", h.handleOpenAPI)
 
 	// metrics
 	if cfg.Observability.EnablePrometheus {
