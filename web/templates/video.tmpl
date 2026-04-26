@@ -10,7 +10,7 @@
 {{define "content"}}
 <div class="watch-page">
     <div class="player-wrap">
-        <video id="video-player" controls preload="metadata" data-channel-id="{{.Channel.YoutubeChannelID}}" data-video-id="{{.Video.YoutubeVideoID}}">
+        <video id="video-player" controls preload="metadata" data-channel-id="{{.Channel.YoutubeChannelID}}" data-video-id="{{.Video.YoutubeVideoID}}" poster="/data/media/channels/{{.Channel.YoutubeChannelID}}/{{.Video.YoutubeVideoID}}/video.webp">
             <source src="/data/{{webPath .Video.VideoRelPath}}" type="video/mp4">
             {{range .Subtitles}}
             <track kind="subtitles" src="/data/{{webPath .RelPath}}" srclang="{{.LanguageCode}}" label="{{if .LanguageName}}{{.LanguageName}}{{else}}{{.LanguageCode}}{{end}}">
