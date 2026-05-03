@@ -448,6 +448,41 @@ func (h *handlers) handleDeleteCreator(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	for offset := 0; ; {
+		videos, total, err := h.store.ListVideosByChannel(ctx, channel.ID, 100, offset)
+		if err != nil {
+			h.serverError(w, err)
+			return
+		}
+		if len(videos) == 0 {
+			break
+		}
+		for _, video := range videos {
+			for _, rel := range []string{video.VideoRelPath, video.ThumbnailRelPath, video.InfoJSONRelPath} {
+				if rel != "" {
+					os.Remove(filepath.Join(h.config.Archive.DataDir, rel))
+				}
+			}
+
+			subtitles, _ := h.store.GetSubtitles(ctx, video.ID)
+			for _, sub := range subtitles {
+				if sub.RelPath != "" {
+					os.Remove(filepath.Join(h.config.Archive.DataDir, sub.RelPath))
+				}
+			}
+
+			h.store.DeleteVideoVectors(ctx, video.YoutubeVideoID)
+
+			if err := h.store.DeleteVideo(ctx, video.ID); err != nil {
+				h.serverError(w, err)
+				return
+			}
+		}
+		if offset+len(videos) >= total {
+			break
+		}
+	}
+
 	channelDir := filepath.Join(h.config.Archive.DataDir, "media", "channels", channel.YoutubeChannelID)
 	for _, prefix := range []string{"avatar", "banner"} {
 		for _, ext := range []string{"jpg", "png", "webp"} {
@@ -455,12 +490,12 @@ func (h *handlers) handleDeleteCreator(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := h.store.ClearChannelImages(ctx, channel.ID); err != nil {
+	if err := h.store.DeleteChannel(ctx, channel.ID); err != nil {
 		h.serverError(w, err)
 		return
 	}
 
-	http.Redirect(w, r, "/creators/"+ytID, http.StatusSeeOther)
+	http.Redirect(w, r, "/creators", http.StatusSeeOther)
 }
 
 func (h *handlers) handleRefreshCreator(w http.ResponseWriter, r *http.Request) {
