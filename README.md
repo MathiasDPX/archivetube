@@ -5,6 +5,8 @@
   # ArchiveTube 
   
 A self-hosted YouTube archiving application made for high-quality and complete archives
+
+![Build workflow status badge](https://img.shields.io/github/actions/workflow/status/MathiasDPX/archivetube/publish-ghcr.yml) ![Last commit badge](https://img.shields.io/github/last-commit/MathiasDPX/archivetube)
 </div>
 
 ## Features
