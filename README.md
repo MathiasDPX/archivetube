@@ -48,4 +48,4 @@ You can find the full installation guide in the [documentation](https://mathiasd
 
 # Development
 
-Follow the 1st step of the normal installation for setting up the confnig and start 
+Follow the 1st step of the normal installation for setting up the config and start 
