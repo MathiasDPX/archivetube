@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var progresses = JSON.parse(window.localStorage.getItem("video_progresses"));
         progress = progresses[videoId];
 
-        if (progress !== null) {
+        if (progress !== null && typeof progress !== 'undefined') {
             video.currentTime = progress;
         }
     }
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if ('mediaSession' in navigator) {
         const videoTitle = document.getElementById('video-title').innerText;
         const channelName = document.getElementById('channel-name').innerText;
-        const channelAvatarURL = document.getElementById('channel-avatar').src;
+        const channelAvatarURL = document.getElementById('channel-avatar')?.src || '';
 
         metadata = {
             title: videoTitle,
