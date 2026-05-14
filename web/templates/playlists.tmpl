@@ -1,0 +1,78 @@
+{{define "title"}}Playlists - ArchiveTube{{end}}
+{{define "content"}}
+<div class="page-shell">
+    <div class="playlists-header">
+        <h1 class="page-heading">Playlists</h1>
+        {{if or (not authEnabled) (loggedIn)}}
+        <button type="button" class="form-submit form-submit-sm" id="new-playlist-btn">New playlist</button>
+        {{end}}
+    </div>
+
+    {{if .Playlists}}
+    <div class="video-grid">
+        {{range .Playlists}}
+        <div class="video-card">
+            <a href="/playlists/{{.ID}}" class="thumb-link">
+                <div class="thumb">
+                    {{if .ThumbnailRelPath}}
+                    <img src="/data/{{webPath .ThumbnailRelPath}}" alt="" loading="lazy">
+                    {{else}}
+                    <div class="playlist-thumb-empty">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor"><path d="M22 7H2v1h20V7zm-9 5H2v1h11v-1zM2 17h11v-1H2v1zm13-1v6l5-3-5-3z"/></svg>
+                    </div>
+                    {{end}}
+                    <span class="badge-playlist">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M22 7H2v1h20V7zm-9 5H2v1h11v-1zM2 17h11v-1H2v1zm13-1v6l5-3-5-3z"/></svg>
+                        {{.VideoCount}} video{{if ne .VideoCount 1}}s{{end}}
+                    </span>
+                </div>
+            </a>
+            <div class="card-body">
+                <a href="/playlists/{{.ID}}" class="card-title">{{.Name}}</a>
+                <span class="card-meta">Updated {{fmtDate .UpdatedAt}}</span>
+            </div>
+        </div>
+        {{end}}
+    </div>
+    {{else}}
+    <div class="empty">
+        <p>No playlists yet.</p>
+        {{if or (not authEnabled) (loggedIn)}}
+        <p class="link-subtle">Create or Archive one</p>
+        {{end}}
+    </div>
+    {{end}}
+</div>
+{{end}}
+{{define "scripts"}}
+<script>
+(function () {
+    var btn = document.getElementById("new-playlist-btn");
+    if (!btn) return;
+
+    btn.addEventListener("click", function () {
+        var name = prompt("Playlist name");
+        if (!name) return;
+        name = name.trim();
+        if (!name) return;
+        btn.disabled = true;
+        fetch("/api/playlists", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: name })
+        })
+            .then(function (r) {
+                if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || "failed"); });
+                return r.json();
+            })
+            .then(function (data) {
+                window.location.href = "/playlists/" + data.id;
+            })
+            .catch(function (err) {
+                btn.disabled = false;
+                alert(err.message || "Failed to create playlist");
+            });
+    });
+})();
+</script>
+{{end}}

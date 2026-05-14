@@ -21,15 +21,16 @@ const (
 )
 
 type Job struct {
-	ID        string    `json:"id"`
-	URL       string    `json:"url"`
-	Quality   string    `json:"quality"`
-	Status    Status    `json:"status"`
-	Error     string    `json:"error,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
+	ID         string    `json:"id"`
+	URL        string    `json:"url"`
+	Quality    string    `json:"quality"`
+	Status     Status    `json:"status"`
+	Error      string    `json:"error,omitempty"`
+	CreatedAt  time.Time `json:"created_at"`
+	PlaylistID int64     `json:"playlist_id,omitempty"`
 }
 
-type ArchiveFunc func(ctx context.Context, url string, quality string) error
+type ArchiveFunc func(ctx context.Context, url string, quality string, playlistID int64) error
 
 type Queue struct {
 	mu      sync.Mutex
@@ -48,16 +49,21 @@ func New(archiveFn ArchiveFunc) *Queue {
 }
 
 func (q *Queue) Enqueue(url string, quality string) *Job {
+	return q.EnqueueWithPlaylist(url, quality, 0)
+}
+
+func (q *Queue) EnqueueWithPlaylist(url string, quality string, playlistID int64) *Job {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
 	q.nextID++
 	job := &Job{
-		ID:        fmt.Sprintf("%d", q.nextID),
-		URL:       url,
-		Quality:   quality,
-		Status:    StatusPending,
-		CreatedAt: time.Now(),
+		ID:         fmt.Sprintf("%d", q.nextID),
+		URL:        url,
+		Quality:    quality,
+		Status:     StatusPending,
+		CreatedAt:  time.Now(),
+		PlaylistID: playlistID,
 	}
 	q.jobs = append(q.jobs, job)
 	q.updateMetrics()
@@ -140,7 +146,7 @@ func (q *Queue) worker() {
 		q.setStatus(job.ID, StatusProcessing, "")
 		log.Printf("queue: processing %s (%s)", job.ID, job.URL)
 
-		err := q.archive(context.Background(), job.URL, job.Quality)
+		err := q.archive(context.Background(), job.URL, job.Quality, job.PlaylistID)
 		if err != nil {
 			log.Printf("queue: error for %s: %v", job.ID, err)
 			q.setStatus(job.ID, StatusError, err.Error())

@@ -17,6 +17,9 @@ var entries = [];
 var MODE_VIDEO = "video";
 var MODE_LIST = "list";
 var currentMode = MODE_VIDEO;
+var fetchedPlaylistTitle = "";
+var fetchedYoutubePlaylistID = "";
+var sourceURL = "";
 
 function isSingleVideoURL(url) {
     if (!url) return true;
@@ -57,11 +60,14 @@ function fetchPlaylist() {
     var url = urlInput.value.trim();
     if (!url) return;
 
+    sourceURL = url;
     picker.style.display = "";
     listEl.innerHTML = "";
     loadingEl.style.display = "flex";
     errorEl.style.display = "none";
     entries = [];
+    fetchedPlaylistTitle = "";
+    fetchedYoutubePlaylistID = "";
     smartBtn.disabled = true;
     btnLabel.textContent = "Loading…";
 
@@ -74,15 +80,27 @@ function fetchPlaylist() {
             loadingEl.style.display = "none";
             smartBtn.disabled = false;
             updateButton();
-            if (!data || data.length === 0) {
+
+            // Support both legacy array response and new object shape.
+            var arr = Array.isArray(data) ? data : (data && data.entries) || [];
+            if (data && !Array.isArray(data)) {
+                fetchedPlaylistTitle = data.playlist_title || "";
+                fetchedYoutubePlaylistID = data.playlist_id || "";
+            }
+
+            if (!arr || arr.length === 0) {
                 errorEl.textContent = "No videos found. Is this a playlist or channel URL?";
                 errorEl.style.display = "";
                 return;
             }
-            entries = data.sort(function (a, b) {
+            entries = arr.sort(function (a, b) {
                 return (a.release_date || "").localeCompare(b.release_date || "");
             });
-            pickerTitle.textContent = entries.length + " video" + (entries.length !== 1 ? "s" : "");
+
+            var title = entries.length + " video" + (entries.length !== 1 ? "s" : "");
+            if (fetchedPlaylistTitle) title = fetchedPlaylistTitle + " · " + title;
+            pickerTitle.textContent = title;
+
             renderEntries();
         })
         .catch(function (err) {
@@ -163,10 +181,22 @@ archiveBtn.addEventListener("click", function () {
     archiveBtn.disabled = true;
     archiveBtn.textContent = "Adding…";
 
+    var payload = {
+        urls: urls,
+        quality: qualitySelect ? qualitySelect.value : ""
+    };
+
+    // Auto-create the playlist when archiving a YouTube playlist URL.
+    if (fetchedPlaylistTitle) {
+        payload.playlist_name = fetchedPlaylistTitle;
+        payload.playlist_source_url = sourceURL;
+        payload.youtube_playlist_id = fetchedYoutubePlaylistID;
+    }
+
     fetch("/api/archive/batch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ urls: urls, quality: qualitySelect ? qualitySelect.value : "" })
+        body: JSON.stringify(payload)
     })
         .then(function () {
             picker.style.display = "none";

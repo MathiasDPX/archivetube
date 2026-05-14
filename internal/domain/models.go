@@ -55,3 +55,14 @@ type Subtitle struct {
 	RelPath      string
 	IsDefault    bool
 }
+
+type Playlist struct {
+	ID                  int64
+	Name                string
+	SourceURL           string
+	YoutubePlaylistID   string
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+	VideoCount          int
+	ThumbnailRelPath    string // optional thumbnail path of the first video
+}

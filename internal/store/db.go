@@ -19,6 +19,7 @@ CREATE SEQUENCE IF NOT EXISTS channels_id_seq START 1;
 CREATE SEQUENCE IF NOT EXISTS videos_id_seq START 1;
 CREATE SEQUENCE IF NOT EXISTS video_chapters_id_seq START 1;
 CREATE SEQUENCE IF NOT EXISTS video_subtitles_id_seq START 1;
+CREATE SEQUENCE IF NOT EXISTS playlists_id_seq START 1;
 
 CREATE TABLE IF NOT EXISTS channels (
     id                 BIGINT PRIMARY KEY DEFAULT nextval('channels_id_seq'),
@@ -79,9 +80,27 @@ CREATE TABLE IF NOT EXISTS videos_vectors (
     description_vec FLOAT[384]
 );
 
+CREATE TABLE IF NOT EXISTS playlists (
+    id                    BIGINT PRIMARY KEY DEFAULT nextval('playlists_id_seq'),
+    name                  TEXT      NOT NULL DEFAULT '',
+    source_url            TEXT      NOT NULL DEFAULT '',
+    youtube_playlist_id   TEXT      NOT NULL DEFAULT '',
+    created_at            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS playlist_videos (
+    playlist_id BIGINT NOT NULL,
+    video_id    BIGINT NOT NULL,
+    position    INTEGER NOT NULL DEFAULT 0,
+    added_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (playlist_id, video_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_videos_archived_at ON videos(archived_at);
 CREATE INDEX IF NOT EXISTS idx_videos_channel_archived ON videos(channel_id, archived_at);
 CREATE INDEX IF NOT EXISTS idx_channels_name ON channels(name);
+CREATE INDEX IF NOT EXISTS idx_playlist_videos_video ON playlist_videos(video_id);
 `
 
 type Store struct {
@@ -122,6 +141,7 @@ func New(dbPath string, cfg *config.Config) (*Store, error) {
 		{"videos_id_seq", "videos", "id"},
 		{"video_chapters_id_seq", "video_chapters", "id"},
 		{"video_subtitles_id_seq", "video_subtitles", "id"},
+		{"playlists_id_seq", "playlists", "id"},
 	} {
 		var maxID sql.NullInt64
 		if err := db.QueryRow(fmt.Sprintf("SELECT MAX(%s) FROM %s", r.col, r.table)).Scan(&maxID); err == nil && maxID.Valid && maxID.Int64 > 0 {

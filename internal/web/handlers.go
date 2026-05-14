@@ -546,8 +546,19 @@ func (h *handlers) handlePlaylistFetch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Best-effort fetch of the playlist's own title/id.
+	var playlistTitle, playlistID string
+	if info, err := h.archive.FetchPlaylistInfo(ctx, url); err == nil && info != nil {
+		playlistTitle = info.Title
+		playlistID = info.ID
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(entries)
+	json.NewEncoder(w).Encode(map[string]any{
+		"entries":        entries,
+		"playlist_title": playlistTitle,
+		"playlist_id":    playlistID,
+	})
 }
 
 func (h *handlers) handleOpenAPI(w http.ResponseWriter, r *http.Request) {
@@ -559,12 +570,28 @@ func (h *handlers) handleArchiveBatch(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	var body struct {
-		URLs    []string `json:"urls"`
-		Quality string   `json:"quality"`
+		URLs              []string `json:"urls"`
+		Quality           string   `json:"quality"`
+		PlaylistID        int64    `json:"playlist_id,omitempty"`
+		PlaylistName      string   `json:"playlist_name,omitempty"`
+		PlaylistSourceURL string   `json:"playlist_source_url,omitempty"`
+		YoutubePlaylistID string   `json:"youtube_playlist_id,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
+	}
+
+	playlistID := body.PlaylistID
+
+	// Auto-create playlist if a name is provided but no ID.
+	if playlistID == 0 && strings.TrimSpace(body.PlaylistName) != "" {
+		newID, err := h.store.CreatePlaylist(ctx, strings.TrimSpace(body.PlaylistName), body.PlaylistSourceURL, body.YoutubePlaylistID)
+		if err != nil {
+			http.Error(w, "creating playlist: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		playlistID = newID
 	}
 
 	for _, url := range body.URLs {
@@ -576,15 +603,18 @@ func (h *handlers) handleArchiveBatch(w http.ResponseWriter, r *http.Request) {
 		}
 		if ytID, err := archive.ExtractVideoID(url); err == nil {
 			if v, _ := h.store.GetVideoByYoutubeID(ctx, ytID); v != nil {
+				if playlistID > 0 {
+					h.store.AddVideoToPlaylist(ctx, playlistID, v.ID)
+				}
 				h.queue.EnqueueAlreadyArchived(url)
 				continue
 			}
 		}
-		h.queue.Enqueue(url, body.Quality)
+		h.queue.EnqueueWithPlaylist(url, body.Quality, playlistID)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	json.NewEncoder(w).Encode(map[string]any{"status": "ok", "playlist_id": playlistID})
 }
 
 func (h *handlers) renderWithRequest(w http.ResponseWriter, r *http.Request, name string, data any) {

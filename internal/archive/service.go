@@ -101,7 +101,7 @@ func qualityToFormat(quality string) string {
 	}
 }
 
-func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) error {
+func (s *Service) ArchiveURL(ctx context.Context, url string, quality string, playlistID int64) error {
 	ctx, span := tracer.Start(ctx, "archive.ArchiveURL")
 	defer span.End()
 
@@ -114,6 +114,12 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 		return fmt.Errorf("checking existing video: %w", err)
 	}
 	if existing != nil {
+		// Video is already archived: still attach to playlist if requested.
+		if playlistID > 0 {
+			if err := s.Store.AddVideoToPlaylist(ctx, playlistID, existing.ID); err != nil {
+				log.Printf("adding existing video %s to playlist %d: %v", ytID, playlistID, err)
+			}
+		}
 		return fmt.Errorf("video %s is already archived", ytID)
 	}
 
@@ -334,6 +340,12 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string) er
 
 	metrics.IncArchivedVideos()
 	metrics.AddArchiveSizeBytes(fileSizeBytes)
+
+	if playlistID > 0 {
+		if err := s.Store.AddVideoToPlaylist(ctx, playlistID, videoID); err != nil {
+			log.Printf("adding video %s to playlist %d: %v", info.ID, playlistID, err)
+		}
+	}
 
 	return nil
 }
@@ -578,13 +590,61 @@ func findExistingImage(dataDir, dir, prefix string) string {
 }
 
 type PlaylistEntry struct {
-	ID          string  `json:"id"`
-	Title       string  `json:"title"`
-	Thumbnail   string  `json:"thumbnail"`
-	Duration    float64 `json:"duration"`
-	URL         string  `json:"url"`
-	ReleaseDate string  `json:"release_date"`
-	IsShort     bool    `json:"is_short"`
+	ID            string  `json:"id"`
+	Title         string  `json:"title"`
+	Thumbnail     string  `json:"thumbnail"`
+	Duration      float64 `json:"duration"`
+	URL           string  `json:"url"`
+	ReleaseDate   string  `json:"release_date"`
+	IsShort       bool    `json:"is_short"`
+	PlaylistTitle string  `json:"playlist_title,omitempty"`
+	PlaylistID    string  `json:"playlist_id,omitempty"`
+}
+
+// PlaylistInfo describes the playlist itself, separate from its entries.
+type PlaylistInfo struct {
+	Title string
+	ID    string
+}
+
+// FetchPlaylistInfo returns the playlist's title and YouTube ID, parsed from the URL itself when possible.
+func (s *Service) FetchPlaylistInfo(ctx context.Context, rawURL string) (*PlaylistInfo, error) {
+	ctx, span := tracer.Start(ctx, "archive.FetchPlaylistInfo")
+	defer span.End()
+
+	args := []string{
+		"--flat-playlist",
+		"--dump-single-json",
+		"--no-warnings",
+		"--playlist-items", "1",
+	}
+
+	if s.Proxy != "" {
+		args = append(args, "--proxy", s.Proxy)
+	}
+
+	cookiePath := "/app/cookies.txt"
+	if _, err := os.Stat(cookiePath); err == nil {
+		args = append(args, "--cookies", cookiePath)
+	}
+
+	args = append(args, rawURL)
+
+	cmd := exec.CommandContext(ctx, s.YtDlpPath, args...)
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("yt-dlp playlist info failed: %w", err)
+	}
+
+	var raw struct {
+		Title string `json:"title"`
+		ID    string `json:"id"`
+	}
+	if err := json.Unmarshal(output, &raw); err != nil {
+		return nil, fmt.Errorf("decoding playlist info: %w", err)
+	}
+
+	return &PlaylistInfo{Title: raw.Title, ID: raw.ID}, nil
 }
 
 func (s *Service) FetchPlaylistEntries(ctx context.Context, url string) ([]PlaylistEntry, error) {
