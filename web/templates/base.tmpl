@@ -25,6 +25,7 @@
     <header class="topbar">
         <div class="topbar-inner">
             <a href="/" class="logo"><img src="/static/favicon.svg"> <span class="logo-text">ArchiveTube</span></a>
+            <a href="/" class="logo-mobile"><img src="/static/favicon.svg"> <span class="logo-text">ArchiveTube</span></a>
             <form class="topbar-search" method="get" action="/">
                 <div class="search-box">
                     <input type="text" name="q" placeholder="Search" class="search-input">
@@ -34,14 +35,22 @@
                 </div>
             </form>
             <nav class="nav-links">
-                <a href="/">Home</a>
-                <a href="/creators">Creators</a>
-                <a href="/playlists">Playlists</a>
                 {{if or (not authEnabled) (loggedIn)}}
                 <a href="/archive">Archive</a>
                 {{else}}
                 <a href="/login">Login</a>
                 {{end}}
+                <details class="nav-dropdown">
+                    <summary class="nav-dropdown-toggle" aria-label="Open navigation menu" aria-haspopup="menu">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <path d="M4 7h16M4 12h16M4 17h16" />
+                        </svg>
+                    </summary>
+                    <div class="nav-dropdown-menu" role="menu">
+                        <a href="/creators" class="nav-dropdown-item" role="menuitem">Creators</a>
+                        <a href="/playlists" class="nav-dropdown-item" role="menuitem">Playlist</a>
+                    </div>
+                </details> 
             </nav>
         </div>
     </header>
