@@ -1,6 +1,6 @@
 # Playlists
 
-![Playlist screenshot](../assets/images/playlist_screenshot.png)
+![Playlist screenshot](../assets/images/playlist_screenshot.jpg)
 
 When you archive a playlist from YouTube, ArchiveTube creates a playlist for those videos. Currently, ArchiveTube does not support creating playlists from the app itself, nor modifying those playlists. You can only delete and rename them.
 
