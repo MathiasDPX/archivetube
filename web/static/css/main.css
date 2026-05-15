@@ -126,7 +126,6 @@ a {
     color: var(--text);
     font-size: 0.875rem;
     padding: 8px 14px;
-    border-radius: 8px;
     transition: background 0.15s;
     white-space: nowrap;
 }
