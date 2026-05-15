@@ -82,16 +82,6 @@
 {{define "scripts"}}
 <script src="/static/js/infinite-scroll.js"></script>
 <script>
-document.querySelectorAll('.dropdown-toggle').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        btn.closest('.dropdown').classList.toggle('open');
-    });
-});
-document.addEventListener('click', function() {
-    document.querySelectorAll('.dropdown.open').forEach(function(d) {
-        d.classList.remove('open');
-    });
-});
+// Handled globally in /static/js/ui.js
 </script>
 {{end}}

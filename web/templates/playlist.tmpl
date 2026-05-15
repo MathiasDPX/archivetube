@@ -55,19 +55,6 @@
 (function () {
     var pid = document.getElementById("playlist-name").dataset.id;
 
-    document.addEventListener('click', function (e) {
-        var toggle = e.target.closest && e.target.closest('.dropdown-toggle');
-        if (toggle) {
-            e.stopPropagation();
-            var dd = toggle.closest('.dropdown');
-            var wasOpen = dd.classList.contains('open');
-            document.querySelectorAll('.dropdown.open').forEach(function (d) { d.classList.remove('open'); });
-            if (!wasOpen) dd.classList.add('open');
-            return;
-        }
-        document.querySelectorAll('.dropdown.open').forEach(function (d) { d.classList.remove('open'); });
-    });
-
     var renameBtn = document.getElementById("rename-btn");
     if (renameBtn) {
         renameBtn.addEventListener("click", function () {
