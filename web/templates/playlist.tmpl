@@ -1,4 +1,17 @@
 {{define "title"}}{{.Playlist.Name}} - ArchiveTube{{end}}
+
+{{ define "opengraph" }}
+{{if .Videos}}
+{{ $first := index .Videos 0 }}
+{{if $first.ThumbnailRelPath}}
+<meta property="og:image" content="/data/{{webPath $first.ThumbnailRelPath}}">
+{{end}}
+{{end}}
+<meta property="og:title" content="{{.Playlist.Name}} - ArchiveTube">
+<meta property="og:description" content="Playlist countaining {{.Total}} video{{if ne .Total 1}}s{{end}}">
+<meta name="twitter:card" content="summary_large_image">
+{{ end }}
+
 {{define "content"}}
 <div class="page-shell">
     <div class="playlist-detail-header">
