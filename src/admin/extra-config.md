@@ -1,12 +1,12 @@
 # Extra configuration
 
-The code for configuration can be found on <a href="https://github.com/MathiasDPX/archivetube/blob/main/internal/config/config.go" target="_blank">`internal/config/config.go`</a>
+The configuration code can be found at <a href="https://github.com/MathiasDPX/archivetube/blob/main/internal/config/config.go" target="_blank">`internal/config/config.go`</a>.
 
-_This page assumes you have basic <a href="https://toml.io/fr/" target="_blank">TOML</a> knowledge_
+_This page assumes you have basic <a href="https://toml.io/fr/" target="_blank">TOML</a> knowledge._
 
 ## Proxy
 
-ArchiveTube supports HTTP, HTTPS and SOCKS proxy
+ArchiveTube supports HTTP, HTTPS, and SOCKS proxies.
 
 ```toml
 [archive]
@@ -31,7 +31,7 @@ real_ip_header = "header"
 
 ## CORS
 
-If you want to use your archived videos on another site without making your data accessible to everyone, you can setup <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS" target="_blank">CORS</a>. Default is set to `*`
+If you want to use your archived videos on another site without making your data accessible to everyone, you can set up <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS" target="_blank">CORS</a>. The default is set to `*`.
 
 ```toml
 [server]
@@ -40,17 +40,17 @@ cors_host = "https://yt.mathiasd.fr"
 
 # yt-dlp path
 
-You can change the yt-dlp by adding a ytdlp_path argument to the archive section
+You can change the yt-dlp path by adding a `ytdlp_path` argument to the archive section.
 
 ```toml
 [archive]
 ytdlp_path = "/usr/local/bin/yt-dlp"
 ```
 
-Note: this can be used to add custom arguments to yt-dlp by making a middleman bash script. This hasn't been tested though, custom argument support will be added one day
+Note: this can be used to add custom arguments to yt-dlp by creating a middleman bash script. This has not been tested, though; custom argument support will be added one day.
 
 ```bash
 yt-dlp --quiet "$@"
 ```
 
-Here, `--quiet` is added to all yt-dlp commands
+Here, `--quiet` is added to all yt-dlp commands.

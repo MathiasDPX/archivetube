@@ -3,7 +3,7 @@
 
 ## Configuration
 
-Before starting a container, you'll need to write a config file named `config.toml`, here's a minimal configuration, you'll need to change the password_hash to a bcrypt password. See how to manage auth [here](./auth.md#password)
+Before starting a container, you need to write a config file named `config.toml`. Here is a minimal configuration; you need to change `password_hash` to a bcrypt password. See how to manage auth [here](./auth.md#password).
 
 ```toml
 [server]
@@ -14,7 +14,7 @@ mode = "password"
 password_hash = "bcrypt-password"
 ```
 
-Now you need to start a container using Docker. You can find features to extend your configuration in the Admin guide's [features](./) and [extra configuration](./extra-config.md)
+Now you can start a container using Docker. You can find features to extend your configuration in the Admin guide's [features](./) and [extra configuration](./extra-config.md).
 
 ## Running
 
@@ -48,5 +48,4 @@ docker run -d \
 
 ### Podman
 
-You might be able to run ArchiveTube with <a href="https://podman.io/" target="_blank">Podman</a> but this has not been tested yet.
-
+You might be able to run ArchiveTube with <a href="https://podman.io/" target="_blank">Podman</a>, but this has not been tested yet.

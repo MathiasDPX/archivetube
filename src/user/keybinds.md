@@ -1,6 +1,6 @@
 # Keybinds
 
-Keyboard shortcuts allow you to save time on ArchiveTube
+Keyboard shortcuts help you save time on ArchiveTube.
 
 | Keys             | Description                       |
 | ---------------- | --------------------------------- |
@@ -9,5 +9,5 @@ Keyboard shortcuts allow you to save time on ArchiveTube
 | Space            | Play / Pause                      |
 | F                | Fullscreen                        |
 | M                | Mute                              |
-| Numbers 1 to 9   | Seek to the 10% to 90%            |
+| Numbers 1 to 9   | Seek to 10% through 90%           |
 | Number 0         | Seek to the beginning             |
