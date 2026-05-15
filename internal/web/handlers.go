@@ -45,6 +45,8 @@ type VideoData struct {
 	Channel   *domain.Channel
 	Chapters  []domain.Chapter
 	Subtitles []domain.Subtitle
+	Playlist  *domain.Playlist
+	UpNext    []domain.Video
 }
 
 type ArchiveData struct {
@@ -157,11 +159,49 @@ func (h *handlers) handleVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var playlist *domain.Playlist
+	var upNext []domain.Video
+	listParam := strings.TrimSpace(r.URL.Query().Get("list"))
+	if listParam != "" {
+		if playlistID, err := strconv.ParseInt(listParam, 10, 64); err == nil {
+			playlist, err = h.store.GetPlaylist(ctx, playlistID)
+			if err != nil {
+				h.serverError(w, err)
+				return
+			}
+			if playlist != nil {
+				playlistIDs, err := h.store.PlaylistsContainingVideo(ctx, video.ID)
+				if err != nil {
+					h.serverError(w, err)
+					return
+				}
+				inPlaylist := false
+				for _, pid := range playlistIDs {
+					if pid == playlist.ID {
+						inPlaylist = true
+						break
+					}
+				}
+				if !inPlaylist {
+					playlist = nil
+				} else {
+					upNext, _, err = h.store.ListPlaylistVideos(ctx, playlist.ID, playlist.VideoCount, 0)
+					if err != nil {
+						h.serverError(w, err)
+						return
+					}
+				}
+			}
+		}
+	}
+
 	h.renderWithRequest(w, r, "video.tmpl", VideoData{
 		Video:     video,
 		Channel:   channel,
 		Chapters:  chapters,
 		Subtitles: subtitles,
+		Playlist:  playlist,
+		UpNext:    upNext,
 	})
 }
 

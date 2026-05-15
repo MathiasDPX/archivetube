@@ -18,66 +18,95 @@
         </video>
     </div>
 
-    <div class="watch-below">
-        <h1 class="watch-title" id="video-title">{{.Video.Title}}</h1>
+    <div class="watch-below{{if .Playlist}} has-upnext{{end}}">
+        <div class="watch-content">
+            <div class="watch-details">
+                <h1 class="watch-title" id="video-title">{{.Video.Title}}</h1>
 
-        <div class="watch-bar">
-            <a href="/creators/{{.Channel.YoutubeChannelID}}" class="watch-channel">
-                {{if .Channel.ThumbnailPath}}<img src="/data/{{webPath .Channel.ThumbnailPath}}" alt="" id="channel-avatar" class="avatar avatar-channel">{{end}}
-                <span id="channel-name">{{.Channel.Name}}</span>
-            </a>
-            <div class="watch-actions">
-                <details class="action-menu">
-                    <summary class="action-menu-trigger" aria-label="Video actions">
-                        <span class="action-menu-icon">⋮</span>
-                    </summary>
-                    <div class="action-menu-list">
-                        <a href="/api/videos/{{.Video.YoutubeVideoID}}/download" target="_blank" class="action-menu-item">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M5 20h14v-2H5v2zm7-18l-5.5 8h3.5v6h4v-6h3.5L12 2z"/></svg>
-                            Download
-                        </a>
-                        {{if or (not authEnabled) (loggedIn)}}
-                        <form method="post" action="/api/videos/{{.Video.YoutubeVideoID}}/delete" onsubmit="return confirm('Are you sure you want to delete this video?')">
-                            <button type="submit" class="action-menu-item action-menu-danger">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                                Delete
-                            </button>
-                        </form>
-                        {{end}}
-                        {{if .Video.WebpageURL}}
-                        <a href="{{.Video.WebpageURL}}" target="_blank" rel="noopener" class="action-menu-item">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
-                            Original
-                        </a>
+                <div class="watch-bar">
+                    <a href="/creators/{{.Channel.YoutubeChannelID}}" class="watch-channel">
+                        {{if .Channel.ThumbnailPath}}<img src="/data/{{webPath .Channel.ThumbnailPath}}" alt="" id="channel-avatar" class="avatar avatar-channel">{{end}}
+                        <span id="channel-name">{{.Channel.Name}}</span>
+                    </a>
+                    <div class="watch-actions">
+                        <details class="action-menu">
+                            <summary class="action-menu-trigger" aria-label="Video actions">
+                                <span class="action-menu-icon">⋮</span>
+                            </summary>
+                            <div class="action-menu-list">
+                                <a href="/api/videos/{{.Video.YoutubeVideoID}}/download" target="_blank" class="action-menu-item">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M5 20h14v-2H5v2zm7-18l-5.5 8h3.5v6h4v-6h3.5L12 2z"/></svg>
+                                    Download
+                                </a>
+                                {{if or (not authEnabled) (loggedIn)}}
+                                <form method="post" action="/api/videos/{{.Video.YoutubeVideoID}}/delete" onsubmit="return confirm('Are you sure you want to delete this video?')">
+                                    <button type="submit" class="action-menu-item action-menu-danger">
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                                        Delete
+                                    </button>
+                                </form>
+                                {{end}}
+                                {{if .Video.WebpageURL}}
+                                <a href="{{.Video.WebpageURL}}" target="_blank" rel="noopener" class="action-menu-item">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+                                    Original
+                                </a>
+                                {{end}}
+                            </div>
+                        </details>
+                    </div>
+                </div>
+
+                <div class="watch-info-box">
+                    <div class="watch-stats">
+                        {{if .Video.PublishedAt}}<span>{{fmtDatePtr .Video.PublishedAt}}</span>{{end}}
+                        <span>{{fmtDuration .Video.DurationSeconds}}</span>
+                        {{if .Video.FileSizeBytes}}<span>{{fmtSize .Video.FileSizeBytes}}</span>{{end}}
+                        <span>Archived {{fmtDate .Video.ArchivedAt}}</span>
+                    </div>
+                    <div class="watch-description">{{linkify .Video.Description}}</div>
+                </div>
+
+                {{if .Chapters}}
+                <div class="watch-chapters">
+                    <h2 class="section-label">Chapters</h2>
+                    <div class="chapter-list">
+                        {{range .Chapters}}
+                        <div class="chapter-item" data-time="{{.StartSeconds}}" data-end="{{.EndSeconds}}">
+                            <span class="ch-time">{{fmtDuration (ftoi .StartSeconds)}}</span>
+                            <span class="ch-title">{{.Title}}</span>
+                        </div>
                         {{end}}
                     </div>
-                </details>
-            </div>
-        </div>
-
-        <div class="watch-info-box">
-            <div class="watch-stats">
-                {{if .Video.PublishedAt}}<span>{{fmtDatePtr .Video.PublishedAt}}</span>{{end}}
-                <span>{{fmtDuration .Video.DurationSeconds}}</span>
-                {{if .Video.FileSizeBytes}}<span>{{fmtSize .Video.FileSizeBytes}}</span>{{end}}
-                <span>Archived {{fmtDate .Video.ArchivedAt}}</span>
-            </div>
-            <div class="watch-description">{{linkify .Video.Description}}</div>
-        </div>
-
-        {{if .Chapters}}
-        <div class="watch-chapters">
-            <h2 class="section-label">Chapters</h2>
-            <div class="chapter-list">
-                {{range .Chapters}}
-                <div class="chapter-item" data-time="{{.StartSeconds}}" data-end="{{.EndSeconds}}">
-                    <span class="ch-time">{{fmtDuration (ftoi .StartSeconds)}}</span>
-                    <span class="ch-title">{{.Title}}</span>
                 </div>
                 {{end}}
             </div>
+
+            {{if .Playlist}}
+            <aside class="watch-upnext" aria-label="Up next playlist">
+                <div class="watch-upnext-header">
+                    <h2 class="section-label">Up next</h2>
+                    <a class="watch-upnext-link" href="/playlists/{{.Playlist.ID}}">{{.Playlist.Name}}</a>
+                </div>
+                <ol class="watch-upnext-list">
+                    {{range $i, $v := .UpNext}}
+                    <li class="watch-upnext-row {{if eq $v.YoutubeVideoID $.Video.YoutubeVideoID}}is-current{{end}}">
+                        <a href="/videos/{{$v.YoutubeVideoID}}?list={{$.Playlist.ID}}" class="watch-upnext-thumb">
+                            {{if $v.ThumbnailRelPath}}
+                            <img src="/data/{{webPath $v.ThumbnailRelPath}}" alt="" loading="lazy">
+                            {{end}}
+                            <span class="badge-duration">{{fmtDuration $v.DurationSeconds}}</span>
+                        </a>
+                        <div class="watch-upnext-info">
+                            <a href="/videos/{{$v.YoutubeVideoID}}?list={{$.Playlist.ID}}" class="watch-upnext-title">{{$v.Title}}</a>
+                            <a href="/creators/{{$v.ChannelYoutubeID}}" class="watch-upnext-channel">{{$v.ChannelName}}</a>
+                        </div>
+                    </li>
+                    {{end}}
+                </ol>
+            </aside>
+            {{end}}
         </div>
-        {{end}}
     </div>
 </div>
 

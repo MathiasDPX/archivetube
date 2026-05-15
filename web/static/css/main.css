@@ -754,6 +754,110 @@ a {
     padding: 16px 24px 48px;
 }
 
+.watch-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+}
+
+.watch-details {
+    min-width: 0;
+}
+
+.watch-upnext {
+    background: var(--bg-raised);
+    border-radius: var(--radius);
+    padding: 16px;
+    align-self: start;
+    position: sticky;
+    top: 16px;
+}
+
+.watch-upnext-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.watch-upnext-link {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    transition: color 0.15s;
+}
+
+.watch-upnext-link:hover {
+    color: var(--text);
+}
+
+.watch-upnext-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.watch-upnext-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.watch-upnext-row.is-current {
+    opacity: 0.75;
+}
+
+.watch-upnext-row.is-current .watch-upnext-title {
+    color: var(--text-secondary);
+}
+
+.watch-upnext-thumb {
+    position: relative;
+    width: 160px;
+    aspect-ratio: 16 / 9;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--bg-hover);
+    flex-shrink: 0;
+}
+
+.watch-upnext-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.watch-upnext-info {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.watch-upnext-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.watch-upnext-channel {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.watch-upnext-channel:hover {
+    color: var(--text-secondary);
+}
+
 .watch-title {
     font-size: 1.25rem;
     font-weight: 600;
@@ -1401,5 +1505,36 @@ footer a {
     }
     .playlist-video-index {
         display: none;
+    }
+}
+
+@media (min-width: 960px) {
+    .watch-below.has-upnext {
+        max-width: 1280px;
+    }
+
+    .watch-below.has-upnext .watch-content {
+        grid-template-columns: minmax(0, 1fr) 380px;
+        gap: 24px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .watch-below.has-upnext .watch-content {
+        grid-template-columns: minmax(0, 1fr) 440px;
+    }
+
+    .watch-upnext-thumb {
+        width: 160px;
+    }
+}
+
+@media (min-width: 1400px) {
+    .watch-below.has-upnext {
+        max-width: 1440px;
+    }
+
+    .watch-below.has-upnext .watch-content {
+        grid-template-columns: minmax(0, 1fr) 480px;
     }
 }

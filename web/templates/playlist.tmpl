@@ -31,14 +31,14 @@
             {{range $i, $v := .Videos}}
             <li class="playlist-video-row" data-video-id="{{$v.YoutubeVideoID}}">
                 <span class="playlist-video-index">{{add $i 1}}</span>
-                <a href="/videos/{{$v.YoutubeVideoID}}" class="playlist-video-thumb">
+                <a href="/videos/{{$v.YoutubeVideoID}}?list={{$.Playlist.ID}}" class="playlist-video-thumb">
                     {{if $v.ThumbnailRelPath}}
                     <img src="/data/{{webPath $v.ThumbnailRelPath}}" alt="" loading="lazy">
                     {{end}}
                     <span class="badge-duration">{{fmtDuration $v.DurationSeconds}}</span>
                 </a>
                 <div class="playlist-video-info">
-                    <a href="/videos/{{$v.YoutubeVideoID}}" class="playlist-video-title">{{$v.Title}}</a>
+                    <a href="/videos/{{$v.YoutubeVideoID}}?list={{$.Playlist.ID}}" class="playlist-video-title">{{$v.Title}}</a>
                     <a href="/creators/{{$v.ChannelYoutubeID}}" class="playlist-video-channel">{{$v.ChannelName}}</a>
                 </div>
             </li>
