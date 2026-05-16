@@ -32,6 +32,18 @@ function isSingleVideoURL(url) {
     return false;
 }
 
+function isChannelURL(url) {
+    if (!url) return false;
+    if (!/youtube\.com|youtu\.be/.test(url)) return false;
+    return /youtube\.com\/(channel\/|c\/|user\/|@)/.test(url);
+}
+
+function isPlaylistURL(url) {
+    if (!url) return false;
+    if (!/youtube\.com|youtu\.be/.test(url)) return false;
+    return /[?&]list=/.test(url);
+}
+
 function updateButton() {
     var url = urlInput.value.trim();
     if (isSingleVideoURL(url)) {
@@ -186,8 +198,8 @@ archiveBtn.addEventListener("click", function () {
         quality: qualitySelect ? qualitySelect.value : ""
     };
 
-    // Auto-create the playlist when archiving a YouTube playlist URL.
-    if (fetchedPlaylistTitle) {
+    // Auto-create the playlist only for YouTube playlist URLs, not channels.
+    if (fetchedPlaylistTitle && isPlaylistURL(sourceURL) && !isChannelURL(sourceURL)) {
         payload.playlist_name = fetchedPlaylistTitle;
         payload.playlist_source_url = sourceURL;
         payload.youtube_playlist_id = fetchedYoutubePlaylistID;
