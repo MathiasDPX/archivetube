@@ -73,10 +73,10 @@ function fetchPlaylist() {
     if (!url) return;
 
     sourceURL = url;
-    picker.style.display = "";
+    picker.classList.remove("is-hidden");
     listEl.innerHTML = "";
-    loadingEl.style.display = "flex";
-    errorEl.style.display = "none";
+    loadingEl.classList.remove("is-hidden");
+    errorEl.classList.add("is-hidden");
     entries = [];
     fetchedPlaylistTitle = "";
     fetchedYoutubePlaylistID = "";
@@ -89,7 +89,7 @@ function fetchPlaylist() {
             return r.json();
         })
         .then(function (data) {
-            loadingEl.style.display = "none";
+            loadingEl.classList.add("is-hidden");
             smartBtn.disabled = false;
             updateButton();
 
@@ -102,7 +102,7 @@ function fetchPlaylist() {
 
             if (!arr || arr.length === 0) {
                 errorEl.textContent = "No videos found. Is this a playlist or channel URL?";
-                errorEl.style.display = "";
+                errorEl.classList.remove("is-hidden");
                 return;
             }
             entries = arr.sort(function (a, b) {
@@ -116,11 +116,11 @@ function fetchPlaylist() {
             renderEntries();
         })
         .catch(function (err) {
-            loadingEl.style.display = "none";
+            loadingEl.classList.add("is-hidden");
             smartBtn.disabled = false;
             updateButton();
             errorEl.textContent = err.message || "Failed to fetch playlist";
-            errorEl.style.display = "";
+            errorEl.classList.remove("is-hidden");
         });
 }
 
@@ -211,7 +211,7 @@ archiveBtn.addEventListener("click", function () {
         body: JSON.stringify(payload)
     })
         .then(function () {
-            picker.style.display = "none";
+            picker.classList.add("is-hidden");
             entries = [];
             archiveBtn.disabled = false;
             archiveBtn.textContent = "Archive selected";

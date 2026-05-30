@@ -36,9 +36,9 @@
             </form>
             <nav class="nav-links">
                 {{if or (not authEnabled) (loggedIn)}}
-                <a href="/archive">Archive</a>
+                <a href="/archive" class="nav-link-pill">Archive</a>
                 {{else}}
-                <a href="/login">Login</a>
+                <a href="/login" class="nav-link-pill">Login</a>
                 {{end}}
                 <details class="nav-dropdown">
                     <summary class="nav-dropdown-toggle" aria-label="Open navigation menu" aria-haspopup="menu">

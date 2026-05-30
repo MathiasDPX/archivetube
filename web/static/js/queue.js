@@ -15,12 +15,12 @@ function escapeHTML(str) {
 function render(jobs) {
     if (!jobs || jobs.length === 0) {
         list.innerHTML = '<p class="queue-empty">No jobs in the queue.</p>';
-        clearForm.style.display = "none";
+        clearForm.classList.add("is-hidden");
         return;
     }
 
     const hasFinished = jobs.some(j => j.status === "done" || j.status === "error" || j.status === "already_archived");
-    clearForm.style.display = hasFinished ? "" : "none";
+    clearForm.classList.toggle("is-hidden", !hasFinished);
 
     list.innerHTML = jobs.map(j => {
         let errorHTML = "";

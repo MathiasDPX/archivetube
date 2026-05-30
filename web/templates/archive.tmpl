@@ -27,7 +27,7 @@
         </div>
     </form>
 
-    <div id="playlist-picker" class="playlist-picker" style="display:none;">
+    <div id="playlist-picker" class="playlist-picker is-hidden">
         <div class="playlist-picker-header">
             <h2 class="section-label" id="playlist-picker-title">Videos</h2>
             <div class="playlist-picker-actions">
@@ -37,17 +37,17 @@
             </div>
         </div>
         <div id="playlist-list" class="playlist-list"></div>
-        <div id="playlist-loading" class="playlist-loading" style="display:none;">
-            <span class="queue-status-dot" style="background:var(--blue);animation:pulse 1.2s infinite;"></span>
+        <div id="playlist-loading" class="playlist-loading is-hidden">
+            <span class="queue-status-dot queue-status-dot-pulse"></span>
             Fetching videos…
         </div>
-        <div id="playlist-error" class="alert alert-error" style="display:none;"></div>
+        <div id="playlist-error" class="alert alert-error is-hidden"></div>
     </div>
 
     <div class="queue-section">
         <div class="queue-header">
             <h2 class="section-label">Queue</h2>
-            <form method="post" action="/api/queue/clear" id="clear-form" style="display:none;">
+            <form method="post" action="/api/queue/clear" id="clear-form" class="is-hidden">
                 <button type="submit" class="queue-clear-btn">Clear finished</button>
             </form>
         </div>
