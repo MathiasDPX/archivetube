@@ -4,8 +4,8 @@ go 1.25.0
 
 require (
 	github.com/BurntSushi/toml v1.6.0
-	github.com/coreos/go-oidc/v3 v3.18.0
-	github.com/duckdb/duckdb-go/v2 v2.10503.1
+	github.com/coreos/go-oidc/v3 v3.19.0
+	github.com/duckdb/duckdb-go/v2 v2.10504.0
 	github.com/prometheus/client_golang v1.23.2
 	go.opentelemetry.io/contrib/exporters/autoexport v0.69.0
 	go.opentelemetry.io/otel v1.44.0
@@ -20,12 +20,12 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/duckdb/duckdb-go-bindings v0.10503.0 // indirect
-	github.com/duckdb/duckdb-go-bindings/lib/darwin-amd64 v0.10503.0 // indirect
-	github.com/duckdb/duckdb-go-bindings/lib/darwin-arm64 v0.10503.0 // indirect
-	github.com/duckdb/duckdb-go-bindings/lib/linux-amd64 v0.10503.0 // indirect
-	github.com/duckdb/duckdb-go-bindings/lib/linux-arm64 v0.10503.0 // indirect
-	github.com/duckdb/duckdb-go-bindings/lib/windows-amd64 v0.10503.0 // indirect
+	github.com/duckdb/duckdb-go-bindings v0.10504.0 // indirect
+	github.com/duckdb/duckdb-go-bindings/lib/darwin-amd64 v0.10504.0 // indirect
+	github.com/duckdb/duckdb-go-bindings/lib/darwin-arm64 v0.10504.0 // indirect
+	github.com/duckdb/duckdb-go-bindings/lib/linux-amd64 v0.10504.0 // indirect
+	github.com/duckdb/duckdb-go-bindings/lib/linux-arm64 v0.10504.0 // indirect
+	github.com/duckdb/duckdb-go-bindings/lib/windows-amd64 v0.10504.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
