@@ -26,7 +26,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 python3-pip pipx curl unzip \
-    && pipx install yt-dlp \
+    && PIPX_BIN_DIR=/usr/local/bin pipx install yt-dlp \
+    && yt-dlp --version \
     && rm -rf /var/lib/apt/lists/*
 
 # Install deno as the local JS runtime for yt-dlp (full YouTube format extraction
