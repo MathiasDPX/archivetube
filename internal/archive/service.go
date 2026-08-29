@@ -149,7 +149,6 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string, pl
 		"--no-write-comments",
 		"-f", qualityToFormat(quality),
 		"--merge-output-format", "mp4",
-		"--remote-components", "ejs:npm",
 	}
 
 	if s.Proxy != "" {

@@ -25,10 +25,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 python3-pip pipx \
+    python3 python3-pip pipx curl \
     && pipx install yt-dlp \
     && rm -rf /var/lib/apt/lists/*
-ENV PATH="/root/.local/bin:$PATH"
+
+# Install deno as the local JS runtime for yt-dlp (full YouTube format extraction
+# and avoids throttling on server/datacenter IPs).
+RUN curl -fsSL https://deno.land/install.sh | sh
+ENV PATH="/root/.local/bin:${PATH}:/root/.deno/bin"
+ENV DENO_INSTALL="/root/.deno"
 
 COPY --from=builder /build/archivetube /app/archivetube
 COPY web/ /app/web/
