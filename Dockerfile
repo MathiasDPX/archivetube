@@ -25,15 +25,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 python3-pip pipx curl \
+    python3 python3-pip pipx curl unzip \
     && pipx install yt-dlp \
     && rm -rf /var/lib/apt/lists/*
 
 # Install deno as the local JS runtime for yt-dlp (full YouTube format extraction
-# and avoids throttling on server/datacenter IPs).
-RUN curl -fsSL https://deno.land/install.sh | sh
-ENV PATH="/root/.local/bin:${PATH}:/root/.deno/bin"
-ENV DENO_INSTALL="/root/.deno"
+# and avoids throttling on server/datacenter IPs). The deno.land install.sh is
+# unreliable in Docker, so download the release binary directly from GitHub.
+ARG DENO_VERSION=2.9.6
+RUN case "$(dpkg --print-architecture)" in \
+        amd64)  DENO_ARCH=x86_64 ;; \
+        arm64)  DENO_ARCH=aarch64 ;; \
+        *)      echo "unsupported arch: $TARGETARCH" >&2; exit 1 ;; \
+    esac \
+    && curl -fsSL -o /tmp/deno.zip "https://github.com/denoland/deno/releases/download/v${DENO_VERSION}/deno-${DENO_ARCH}-unknown-linux-gnu.zip" \
+    && unzip /tmp/deno.zip -d /tmp/deno \
+    && install -m 0755 /tmp/deno/deno /usr/local/bin/deno \
+    && rm -rf /tmp/deno /tmp/deno.zip
+ENV PATH="${PATH}:/usr/local/bin"
 
 COPY --from=builder /build/archivetube /app/archivetube
 COPY web/ /app/web/
