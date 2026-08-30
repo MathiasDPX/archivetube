@@ -1,5 +1,7 @@
 {{define "title"}}{{.Video.Title}} - ArchiveTube{{end}}
 
+{{define "styles"}}<link href="https://cdn.jsdelivr.net/npm/video.js@8.23.8/dist/video-js.min.css" rel="stylesheet">{{end}}
+
 {{ define "opengraph" }}
 <meta property="og:image" content="/data/{{ webPath .Video.ThumbnailRelPath }}">
 <meta property="og:title" content="{{ .Video.Title }} - ArchiveTube">
@@ -10,22 +12,12 @@
 {{define "content"}}
 <div class="watch-page">
     <div class="player-wrap">
-        <video id="video-player" controls preload="metadata" data-channel-id="{{.Channel.YoutubeChannelID}}" data-video-id="{{.Video.YoutubeVideoID}}" poster="/data/media/channels/{{.Channel.YoutubeChannelID}}/{{.Video.YoutubeVideoID}}/video.webp">
+        <video id="video-player" class="video-js vjs-big-play-centered vjs-fluid" controls preload="metadata" data-channel-id="{{.Channel.YoutubeChannelID}}" data-video-id="{{.Video.YoutubeVideoID}}" data-audio-tracks='{{if gt (len .AudioTracks) 1}}[{{range $i, $t := .AudioTracks}}{{if $i}},{{end}}{"url":"{{if $t.RelPath}}/data/{{webPath $t.RelPath}}{{else}}original{{end}}","label":"{{if $t.LanguageName}}{{$t.LanguageName}}{{else}}{{$t.LanguageCode}}{{end}}{{if $t.IsOriginal}} (original){{end}}","isOriginal":{{$t.IsOriginal}},"lang":"{{$t.LanguageCode}}"}{{end}}]{{end}}' poster="/data/media/channels/{{.Channel.YoutubeChannelID}}/{{.Video.YoutubeVideoID}}/video.webp">
             <source src="/data/{{webPath .Video.VideoRelPath}}" type="video/mp4">
             {{range .Subtitles}}
             <track kind="subtitles" src="/data/{{webPath .RelPath}}" srclang="{{.LanguageCode}}" label="{{if .LanguageName}}{{.LanguageName}}{{else}}{{.LanguageCode}}{{end}}">
             {{end}}
         </video>
-        {{if gt (len .AudioTracks) 1}}
-        <div class="audio-track-selector">
-            <label for="audio-track-select">Audio:</label>
-            <select id="audio-track-select" class="form-select">
-                {{range .AudioTracks}}
-                <option value="{{if .RelPath}}/data/{{webPath .RelPath}}{{else}}original{{end}}" {{if .IsOriginal}}selected{{end}}>{{if .LanguageName}}{{.LanguageName}}{{else}}{{.LanguageCode}}{{end}}{{if .IsOriginal}} (original){{end}}</option>
-                {{end}}
-            </select>
-        </div>
-        {{end}}
     </div>
 
     <div class="watch-below{{if .Playlist}} has-upnext{{end}}">
@@ -121,4 +113,4 @@
 </div>
 
 {{end}}
-{{define "scripts"}}<script src="/static/js/player.js"></script>{{end}}
+{{define "scripts"}}<script src="https://cdn.jsdelivr.net/npm/video.js@8.23.8/dist/video.min.js"></script><script src="/static/js/player.js"></script>{{end}}

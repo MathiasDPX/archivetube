@@ -1,115 +1,133 @@
 window.addEventListener("beforeunload", function() {
-    var video = document.querySelector('video');
-    if (!video) return;
+    var player = videojs.getPlayer('video-player');
+    if (!player) return;
 
     var progresses = JSON.parse(window.localStorage.getItem("video_progresses"));
     if (!progresses || typeof progresses != "object") {
         progresses = {};
     }
 
-    const videoId = video.dataset.videoId;
-    const videoTs = video.currentTime
+    const videoId = player.el().querySelector('video').dataset.videoId;
+    const videoTs = player.currentTime();
 
     if (videoId && videoTs != 0) {
         progresses[videoId] = videoTs;
         window.localStorage.setItem("video_progresses", JSON.stringify(progresses));
     }
-})
+});
 
 document.addEventListener('DOMContentLoaded', function () {
-    var video = document.querySelector('video');
-    if (!video) return;
+    var videoEl = document.getElementById('video-player');
+    if (!videoEl) return;
 
-    const videoId = video.dataset.videoId;
-    const channelId = video.dataset.channelId;
+    const videoId = videoEl.dataset.videoId;
+    const channelId = videoEl.dataset.channelId;
 
-    // --- Audio track switching ---
-    var audioSelect = document.getElementById('audio-track-select');
-    var externalAudio = null;   // hidden <audio> element for non-original tracks
-    var currentAudioUrl = null;
-
-    function syncAudio() {
-        if (!externalAudio) return;
-        // Keep external audio in sync with the video
-        if (Math.abs(externalAudio.currentTime - video.currentTime) > 0.3) {
-            externalAudio.currentTime = video.currentTime;
+    var player = videojs('video-player', {
+        fluid: true,
+        playbackRates: [0.5, 1, 1.25, 1.5, 2],
+        userActions: {
+            hotkeys: false
         }
-        if (video.paused) {
-            externalAudio.pause();
-        } else {
-            externalAudio.play().catch(function () {});
-        }
+    });
+
+    // --- Audio tracks integrated into Video.js ---
+    var audioTracksData = [];
+    try {
+        audioTracksData = JSON.parse(videoEl.dataset.audioTracks || '[]');
+    } catch (e) {
+        console.warn('Failed to parse audio tracks data', e);
     }
+    var externalAudio = null;
 
-    function switchAudioTrack(url) {
-        if (url === 'original' || !url) {
-            // Restore the video's native audio
-            video.muted = false;
+    if (audioTracksData.length > 1) {
+        var trackList = player.audioTracks();
+        var trackMap = {};  // trackId -> url
+
+        audioTracksData.forEach(function (t, i) {
+            var url = t.url;
+            var label = t.label;
+            var isOriginal = t.isOriginal;
+            var trackId = isOriginal ? 'original' : 'audio-track-' + i;
+
+            trackMap[trackId] = url;
+
+            var track = new videojs.AudioTrack({
+                id: trackId,
+                kind: isOriginal ? 'main' : 'translation',
+                label: label,
+                language: isOriginal ? '' : (t.lang || '')
+            });
+
+            if (isOriginal) {
+                track.enabled = true;
+            }
+
+            trackList.addTrack(track);
+        });
+
+        function switchAudioTrack(url) {
+            if (url === 'original' || !url) {
+                player.muted(false);
+                if (externalAudio) {
+                    externalAudio.pause();
+                    externalAudio.src = '';
+                    externalAudio = null;
+                }
+                return;
+            }
+
+            player.muted(true);
+
             if (externalAudio) {
                 externalAudio.pause();
-                externalAudio.src = '';
-                externalAudio = null;
-                currentAudioUrl = null;
             }
-            return;
+            externalAudio = new Audio(url);
+            externalAudio.currentTime = player.currentTime();
+            externalAudio.volume = player.volume();
+            if (!player.paused()) {
+                externalAudio.play().catch(function () {});
+            }
         }
 
-        if (currentAudioUrl === url) return;
-        currentAudioUrl = url;
-
-        // Mute the video and play the external audio file
-        video.muted = true;
-
-        if (externalAudio) {
-            externalAudio.pause();
-        }
-        externalAudio = new Audio(url);
-        externalAudio.currentTime = video.currentTime;
-        externalAudio.volume = video.volume;
-        if (!video.paused) {
-            externalAudio.play().catch(function () {});
-        }
-
-        // Sync events
-        externalAudio.addEventListener('play', function () {
-            syncAudio();
-        });
-    }
-
-    if (audioSelect) {
-        audioSelect.addEventListener('change', function () {
-            switchAudioTrack(this.value);
+        trackList.addEventListener('change', function () {
+            for (var i = 0; i < trackList.length; i++) {
+                if (trackList[i].enabled) {
+                    switchAudioTrack(trackMap[trackList[i].id]);
+                    break;
+                }
+            }
         });
 
-        // Keep external audio synced with video playback events
-        video.addEventListener('play', function () {
+        // Keep external audio synced with player events
+        player.on('play', function () {
             if (externalAudio) {
                 externalAudio.play().catch(function () {});
             }
         });
-        video.addEventListener('pause', function () {
+        player.on('pause', function () {
             if (externalAudio) {
                 externalAudio.pause();
             }
         });
-        video.addEventListener('seeked', function () {
+        player.on('seeked', function () {
             if (externalAudio) {
-                externalAudio.currentTime = video.currentTime;
+                externalAudio.currentTime = player.currentTime();
             }
         });
-        video.addEventListener('timeupdate', function () {
-            if (externalAudio && Math.abs(externalAudio.currentTime - video.currentTime) > 0.5) {
-                externalAudio.currentTime = video.currentTime;
+        player.on('timeupdate', function () {
+            if (externalAudio && Math.abs(externalAudio.currentTime - player.currentTime()) > 0.5) {
+                externalAudio.currentTime = player.currentTime();
             }
         });
-        video.addEventListener('volumechange', function () {
+        player.on('volumechange', function () {
             if (externalAudio) {
-                externalAudio.volume = video.volume;
+                externalAudio.volume = player.volume();
             }
         });
-        video.addEventListener('ratechange', function () {
+        player.on('ratechange', function () {
             if (externalAudio) {
-                externalAudio.playbackRate = video.playbackRate;
+                externalAudio.playbackRate = player.playbackRate();
             }
         });
     }
@@ -119,14 +137,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     chapters.forEach(function (item) {
         item.addEventListener('click', function () {
-            video.currentTime = parseFloat(this.dataset.time);
-            video.play();
+            player.currentTime(parseFloat(this.dataset.time));
+            player.play();
         });
     });
 
     if (chapters.length > 0) {
-        video.addEventListener('timeupdate', function () {
-            var t = video.currentTime;
+        player.on('timeupdate', function () {
+            var t = player.currentTime();
             chapters.forEach(function (ch) {
                 var start = parseFloat(ch.dataset.time);
                 var end = parseFloat(ch.dataset.end);
@@ -140,14 +158,18 @@ document.addEventListener('DOMContentLoaded', function () {
         progress = progresses[videoId];
 
         if (progress !== null && typeof progress !== 'undefined') {
-            video.currentTime = progress;
+            player.one('loadedmetadata', function () {
+                player.currentTime(progress);
+            });
         }
     }
 
     try {
         const timestamp = params.get('t');
         if (timestamp != null) {
-            video.currentTime = parseFloat(timestamp);
+            player.one('loadedmetadata', function () {
+                player.currentTime(parseFloat(timestamp));
+            });
         }
     } catch (error) {
         console.warn("Failed to process timecode parameter")
@@ -164,108 +186,98 @@ document.addEventListener('DOMContentLoaded', function () {
             artwork: [
                 {
                     src: `/data/media/channels/${channelId}/${videoId}/video.webp`,
-                    sizes: "1920x1080" // lie again
+                    sizes: "1920x1080"
                 },
                 {
                     src: channelAvatarURL,
-                    sizes: "512x512" // lie
+                    sizes: "512x512"
                 }
             ]
         }
         console.log("Starting mediaSession with", metadata);
         navigator.mediaSession.metadata = new MediaMetadata(metadata);
 
-        // player to mediaSession events
-        video.addEventListener('play', function () {
+        player.on('play', function () {
             navigator.mediaSession.playbackState = "playing";
-        })
+        });
 
-        video.addEventListener('pause', function () {
+        player.on('pause', function () {
             navigator.mediaSession.playbackState = "paused";
-        })
+        });
 
-        video.addEventListener('ended', function () {
+        player.on('ended', function () {
             navigator.mediaSession.playbackState = "none";
-        })
-
-        // mediaSession to player events
-        navigator.mediaSession.setActionHandler("play", () => {
-            video.play();
         });
 
-        navigator.mediaSession.setActionHandler("pause", () => {
-            video.pause();
+        navigator.mediaSession.setActionHandler("play", function () {
+            player.play();
         });
 
-        setInterval(() => {
+        navigator.mediaSession.setActionHandler("pause", function () {
+            player.pause();
+        });
+
+        setInterval(function () {
             navigator.mediaSession.setPositionState({
-                duration: video.duration,
-                playbackRate: video.playbackRate,
-                position: video.currentTime
-            })
+                duration: player.duration(),
+                playbackRate: player.playbackRate(),
+                position: player.currentTime()
+            });
         }, 1000);
     } else {
         console.warn("mediaSession unavailable on this browser :'(")
     }
 
-    const playButton = document.getElementById("play");
-    let lastMuteVolume = video.volume;
+    let lastMuteVolume = player.volume();
 
-    addEventListener("keydown", (event) => {
+    addEventListener("keydown", function (event) {
         const tag = event.target && event.target.tagName;
         if (tag === "INPUT" || tag === "TEXTAREA" || (event.target && event.target.isContentEditable)) {
             return;
         }
 
-        // Seek will move 5s
         const seekValue = 5;
-        // Change volume by 10% per press
         const volumeChange = 0.1;
 
         if (event.code == "Space" || event.key == "k") {
-            // Play/pause
-            if (video.paused) {
-                if (playButton) playButton.setAttribute("data-icon", "u");
-                video.play();
+            if (player.paused()) {
+                player.play();
             } else {
-                if (playButton) playButton.setAttribute("data-icon", "P");
-                video.pause();
+                player.pause();
             }
 
         } else if (event.key == "f") {
-            // Fullscreen
-            if (document.fullscreenElement != null) {
-                document.exitFullscreen()
+            if (player.isFullscreen()) {
+                player.exitFullscreen();
             } else {
-                video.requestFullscreen()
+                player.requestFullscreen();
             }
 
         } else if (event.code == "ArrowLeft") {
-            video.currentTime -= seekValue;
+            player.currentTime(player.currentTime() - seekValue);
 
         } else if (event.code == "ArrowRight") {
-            video.currentTime += seekValue;
+            player.currentTime(player.currentTime() + seekValue);
 
         } else if (event.code.startsWith("Digit")) {
-            // todo: same for "NumpadX"
             percent = parseInt(event.code.slice(5)) / 10;
-            video.currentTime = video.duration * percent;
+            player.currentTime(player.duration() * percent);
 
         } else if (event.code == "ArrowUp") {
-            video.volume = Math.min(1, video.volume + volumeChange);
+            player.volume(Math.min(1, player.volume() + volumeChange));
 
         } else if (event.code == "ArrowDown") {
-            video.volume = Math.max(0, video.volume - volumeChange);
+            player.volume(Math.max(0, player.volume() - volumeChange));
 
         } else if (event.key == "m") {
-            if (video.volume != 0) {
-                lastMuteVolume = video.volume;
-                video.volume = 0;
+            if (player.volume() != 0) {
+                lastMuteVolume = player.volume();
+                player.volume(0);
             } else {
                 if (lastMuteVolume == 0) {
-                    video.volume = 1;
+                    player.volume(1);
                 } else {
-                    video.volume = lastMuteVolume;
+                    player.volume(lastMuteVolume);
                 }
             }
 
@@ -274,5 +286,5 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         event.preventDefault();
-    })
+    });
 });
