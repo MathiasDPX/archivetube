@@ -26,6 +26,9 @@ document.addEventListener('DOMContentLoaded', function () {
     var player = videojs('video-player', {
         fluid: true,
         playbackRates: [0.5, 1, 1.25, 1.5, 2],
+        controlBar: {
+            pictureInPictureToggle: false
+        },
         userActions: {
             hotkeys: false
         }
