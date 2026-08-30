@@ -56,13 +56,23 @@ type Subtitle struct {
 	IsDefault    bool
 }
 
+type AudioTrack struct {
+	ID           int64
+	VideoID      int64
+	LanguageCode string
+	LanguageName string
+	Ext          string
+	RelPath      string
+	IsOriginal   bool
+}
+
 type Playlist struct {
-	ID                  int64
-	Name                string
-	SourceURL           string
-	YoutubePlaylistID   string
-	CreatedAt           time.Time
-	UpdatedAt           time.Time
-	VideoCount          int
-	ThumbnailRelPath    string // optional thumbnail path of the first video
+	ID                int64
+	Name              string
+	SourceURL         string
+	YoutubePlaylistID string
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	VideoCount        int
+	ThumbnailRelPath  string // optional thumbnail path of the first video
 }

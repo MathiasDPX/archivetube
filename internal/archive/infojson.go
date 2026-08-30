@@ -24,6 +24,7 @@ type InfoJSON struct {
 	Height         int     `json:"height"`
 	FilesizeApprox float64 `json:"filesize_approx"`
 	Ext            string  `json:"ext"`
+	Language       string  `json:"language"`
 	Chapters       []struct {
 		Title     string  `json:"title"`
 		StartTime float64 `json:"start_time"`
@@ -33,6 +34,22 @@ type InfoJSON struct {
 		Ext      string `json:"ext"`
 		Filepath string `json:"filepath"`
 	} `json:"requested_subtitles"`
+	Formats []FormatInfo `json:"formats"`
+}
+
+type FormatInfo struct {
+	FormatID   string  `json:"format_id"`
+	Ext        string  `json:"ext"`
+	Language   string  `json:"language"`
+	Vcodec     string  `json:"vcodec"`
+	Acodec     string  `json:"acodec"`
+	FormatNote string  `json:"format_note"`
+	Tbr        float64 `json:"tbr"`
+	AudioTrack *struct {
+		Name      string `json:"name"`
+		ID        string `json:"id"`
+		IsDefault bool   `json:"audio_is_default"`
+	} `json:"audio_track"`
 }
 
 func parseInfoJSON(path string) (*InfoJSON, error) {

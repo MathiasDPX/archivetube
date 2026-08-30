@@ -220,6 +220,9 @@ func (s *Store) DeleteVideo(ctx context.Context, id int64) error {
 	if _, err := tx.Exec("DELETE FROM video_subtitles WHERE video_id = ?", id); err != nil {
 		return err
 	}
+	if _, err := tx.Exec("DELETE FROM video_audio_tracks WHERE video_id = ?", id); err != nil {
+		return err
+	}
 	if _, err := tx.Exec("DELETE FROM videos WHERE id = ?", id); err != nil {
 		return err
 	}

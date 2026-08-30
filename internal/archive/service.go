@@ -28,20 +28,22 @@ import (
 var tracer = otel.Tracer("github.com/MathiasDPX/archivetube/internal/archive")
 
 type Service struct {
-	YtDlpPath   string
-	DataDir     string
-	Proxy       string
-	Store       *store.Store
-	SmartSearch *config.SmartSearchConfig
+	YtDlpPath      string
+	DataDir        string
+	Proxy          string
+	AudioLanguages []string
+	Store          *store.Store
+	SmartSearch    *config.SmartSearchConfig
 }
 
-func New(ytdlpPath, dataDir, proxy string, st *store.Store, ss *config.SmartSearchConfig) *Service {
+func New(ytdlpPath, dataDir, proxy string, audioLanguages []string, st *store.Store, ss *config.SmartSearchConfig) *Service {
 	return &Service{
-		YtDlpPath:   ytdlpPath,
-		DataDir:     dataDir,
-		Proxy:       proxy,
-		Store:       st,
-		SmartSearch: ss,
+		YtDlpPath:      ytdlpPath,
+		DataDir:        dataDir,
+		Proxy:          proxy,
+		AudioLanguages: audioLanguages,
+		Store:          st,
+		SmartSearch:    ss,
 	}
 }
 
@@ -319,6 +321,13 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string, pl
 	}
 	if err := s.Store.ReplaceSubtitles(ctx, videoID, domainSubs); err != nil {
 		return fmt.Errorf("replacing subtitles: %w", err)
+	}
+
+	// Download audio tracks for additional languages (excluding AI-generated).
+	// The original audio is always included (it is already muxed into the video file).
+	audioTracks := s.downloadAudioTracks(ctx, info, finalDir, url)
+	if err := s.Store.ReplaceAudioTracks(ctx, videoID, audioTracks); err != nil {
+		log.Printf("replacing audio tracks for %s: %v", info.ID, err)
 	}
 
 	if s.SmartSearch.Enabled {
@@ -728,4 +737,175 @@ func (s *Service) FetchPlaylistEntries(ctx context.Context, url string) ([]Playl
 	}
 
 	return entries, nil
+}
+
+// isAIGenerated checks whether an audio format is AI-dubbed based on format metadata.
+// YouTube labels auto-dubbed tracks with "auto" in the format note or audio track name.
+func isAIGenerated(f FormatInfo) bool {
+	note := strings.ToLower(f.FormatNote)
+	if strings.Contains(note, "auto") {
+		return true
+	}
+	if f.AudioTrack != nil {
+		name := strings.ToLower(f.AudioTrack.Name)
+		if strings.Contains(name, "auto") {
+			return true
+		}
+	}
+	return false
+}
+
+// findBestAudioFormats returns the highest-bitrate audio-only format for each language.
+func findBestAudioFormats(formats []FormatInfo) map[string]FormatInfo {
+	result := make(map[string]FormatInfo)
+	for _, f := range formats {
+		if f.Vcodec != "none" {
+			continue
+		}
+		lang := strings.TrimSpace(f.Language)
+		if lang == "" {
+			continue
+		}
+		existing, ok := result[lang]
+		if !ok || f.Tbr > existing.Tbr {
+			result[lang] = f
+		}
+	}
+	return result
+}
+
+// findOriginalAudioFormat returns the format info for the original/default audio track.
+func findOriginalAudioFormat(info *InfoJSON) (FormatInfo, bool) {
+	for _, f := range info.Formats {
+		if f.Vcodec != "none" {
+			continue
+		}
+		if f.AudioTrack != nil && f.AudioTrack.IsDefault {
+			return f, true
+		}
+		note := strings.ToLower(f.FormatNote)
+		if strings.Contains(note, "default") || strings.Contains(note, "original") {
+			return f, true
+		}
+	}
+	return FormatInfo{}, false
+}
+
+// downloadAudioTracks downloads non-AI audio tracks for the configured languages
+// and returns a list of domain.AudioTrack including the original (already in the video).
+func (s *Service) downloadAudioTracks(ctx context.Context, info *InfoJSON, finalDir, url string) []domain.AudioTrack {
+	var tracks []domain.AudioTrack
+
+	// Determine the original audio track metadata.
+	origLang := info.Language
+	origName := origLang
+	if origName == "" {
+		origName = "Original"
+		origLang = "original"
+	}
+	if origFmt, ok := findOriginalAudioFormat(info); ok {
+		if origFmt.Language != "" {
+			origLang = origFmt.Language
+		}
+		if origFmt.AudioTrack != nil && origFmt.AudioTrack.Name != "" {
+			origName = origFmt.AudioTrack.Name
+		}
+	}
+	// The original audio is already muxed into the video file, so no separate file is needed.
+	tracks = append(tracks, domain.AudioTrack{
+		LanguageCode: origLang,
+		LanguageName: origName,
+		IsOriginal:   true,
+	})
+
+	// Find available audio-only formats grouped by language.
+	audioFormats := findBestAudioFormats(info.Formats)
+
+	// Build the set of desired languages.
+	// If AudioLanguages is empty, download all non-AI tracks.
+	// If set, only download tracks matching those languages.
+	desiredLangs := make(map[string]bool)
+	if len(s.AudioLanguages) == 0 {
+		for lang := range audioFormats {
+			desiredLangs[lang] = true
+		}
+	} else {
+		for _, lang := range s.AudioLanguages {
+			desiredLangs[strings.ToLower(strings.TrimSpace(lang))] = true
+		}
+	}
+
+	for lang, fmtInfo := range audioFormats {
+		// Skip the original language — it's already in the video file.
+		if lang == origLang {
+			continue
+		}
+		if !desiredLangs[lang] {
+			continue
+		}
+		if isAIGenerated(fmtInfo) {
+			log.Printf("audio tracks: skipping AI-generated track %s for %s", lang, info.ID)
+			continue
+		}
+
+		trackName := lang
+		if fmtInfo.AudioTrack != nil && fmtInfo.AudioTrack.Name != "" {
+			trackName = fmtInfo.AudioTrack.Name
+		}
+
+		outputTemplate := filepath.Join(finalDir, "audio."+lang+".%(ext)s")
+		args := []string{
+			"-f", fmtInfo.FormatID,
+			"-x",
+			"--audio-format", "m4a",
+			"--no-write-info-json",
+			"--no-write-thumbnail",
+			"--no-write-subs",
+			"-o", outputTemplate,
+		}
+		if s.Proxy != "" {
+			args = append(args, "--proxy", s.Proxy)
+		}
+		cookiePath := "/app/cookies.txt"
+		if _, err := os.Stat(cookiePath); err == nil {
+			args = append(args, "--cookies", cookiePath)
+		}
+		args = append(args, url)
+
+		_, dlSpan := tracer.Start(ctx, "archive.yt-dlp-audio")
+		cmd := exec.CommandContext(ctx, s.YtDlpPath, args...)
+		output, err := cmd.CombinedOutput()
+		dlSpan.End()
+		if err != nil {
+			log.Printf("audio tracks: downloading %s for %s: %v\n%s", lang, info.ID, err, string(output))
+			continue
+		}
+
+		// Find the downloaded file.
+		pattern := filepath.Join(finalDir, "audio."+lang+".*")
+		matches, _ := filepath.Glob(pattern)
+		if len(matches) == 0 {
+			log.Printf("audio tracks: could not find downloaded file for %s", lang)
+			continue
+		}
+
+		audioFile := matches[0]
+		audioExt := strings.TrimPrefix(filepath.Ext(audioFile), ".")
+		rel, _ := filepath.Rel(s.DataDir, audioFile)
+		rel = filepath.ToSlash(rel)
+
+		tracks = append(tracks, domain.AudioTrack{
+			LanguageCode: lang,
+			LanguageName: trackName,
+			Ext:          audioExt,
+			RelPath:      rel,
+			IsOriginal:   false,
+		})
+
+		if fi, err := os.Stat(audioFile); err == nil {
+			metrics.AddArchiveSizeBytes(fi.Size())
+		}
+	}
+
+	return tracks
 }

@@ -20,6 +20,7 @@ CREATE SEQUENCE IF NOT EXISTS videos_id_seq START 1;
 CREATE SEQUENCE IF NOT EXISTS video_chapters_id_seq START 1;
 CREATE SEQUENCE IF NOT EXISTS video_subtitles_id_seq START 1;
 CREATE SEQUENCE IF NOT EXISTS playlists_id_seq START 1;
+CREATE SEQUENCE IF NOT EXISTS video_audio_tracks_id_seq START 1;
 
 CREATE TABLE IF NOT EXISTS channels (
     id                 BIGINT PRIMARY KEY DEFAULT nextval('channels_id_seq'),
@@ -97,6 +98,17 @@ CREATE TABLE IF NOT EXISTS playlist_videos (
     PRIMARY KEY (playlist_id, video_id)
 );
 
+CREATE TABLE IF NOT EXISTS video_audio_tracks (
+    id            BIGINT PRIMARY KEY DEFAULT nextval('video_audio_tracks_id_seq'),
+    video_id      BIGINT NOT NULL,
+    language_code TEXT    NOT NULL DEFAULT '',
+    language_name TEXT    NOT NULL DEFAULT '',
+    ext           TEXT    NOT NULL DEFAULT '',
+    rel_path      TEXT    NOT NULL DEFAULT '',
+    is_original   INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(video_id, language_code)
+);
+
 CREATE INDEX IF NOT EXISTS idx_videos_archived_at ON videos(archived_at);
 CREATE INDEX IF NOT EXISTS idx_videos_channel_archived ON videos(channel_id, archived_at);
 CREATE INDEX IF NOT EXISTS idx_channels_name ON channels(name);
@@ -142,6 +154,7 @@ func New(dbPath string, cfg *config.Config) (*Store, error) {
 		{"video_chapters_id_seq", "video_chapters", "id"},
 		{"video_subtitles_id_seq", "video_subtitles", "id"},
 		{"playlists_id_seq", "playlists", "id"},
+		{"video_audio_tracks_id_seq", "video_audio_tracks", "id"},
 	} {
 		var maxID sql.NullInt64
 		if err := db.QueryRow(fmt.Sprintf("SELECT MAX(%s) FROM %s", r.col, r.table)).Scan(&maxID); err == nil && maxID.Valid && maxID.Int64 > 0 {

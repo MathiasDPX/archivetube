@@ -41,12 +41,13 @@ type HomeData struct {
 }
 
 type VideoData struct {
-	Video     *domain.Video
-	Channel   *domain.Channel
-	Chapters  []domain.Chapter
-	Subtitles []domain.Subtitle
-	Playlist  *domain.Playlist
-	UpNext    []domain.Video
+	Video       *domain.Video
+	Channel     *domain.Channel
+	Chapters    []domain.Chapter
+	Subtitles   []domain.Subtitle
+	AudioTracks []domain.AudioTrack
+	Playlist    *domain.Playlist
+	UpNext      []domain.Video
 }
 
 type ArchiveData struct {
@@ -153,6 +154,12 @@ func (h *handlers) handleVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	audioTracks, err := h.store.GetAudioTracks(ctx, video.ID)
+	if err != nil {
+		h.serverError(w, err)
+		return
+	}
+
 	channel, err := h.store.GetChannelByYoutubeID(ctx, video.ChannelYoutubeID)
 	if err != nil {
 		h.serverError(w, err)
@@ -196,12 +203,13 @@ func (h *handlers) handleVideo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.renderWithRequest(w, r, "video.tmpl", VideoData{
-		Video:     video,
-		Channel:   channel,
-		Chapters:  chapters,
-		Subtitles: subtitles,
-		Playlist:  playlist,
-		UpNext:    upNext,
+		Video:       video,
+		Channel:     channel,
+		Chapters:    chapters,
+		Subtitles:   subtitles,
+		AudioTracks: audioTracks,
+		Playlist:    playlist,
+		UpNext:      upNext,
 	})
 }
 
@@ -455,6 +463,13 @@ func (h *handlers) handleDeleteVideo(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	audioTracks, _ := h.store.GetAudioTracks(ctx, video.ID)
+	for _, track := range audioTracks {
+		if track.RelPath != "" {
+			os.Remove(filepath.Join(h.config.Archive.DataDir, track.RelPath))
+		}
+	}
+
 	h.store.DeleteVideoVectors(ctx, video.YoutubeVideoID)
 
 	channelID := video.ChannelID
@@ -508,6 +523,13 @@ func (h *handlers) handleDeleteCreator(w http.ResponseWriter, r *http.Request) {
 			for _, sub := range subtitles {
 				if sub.RelPath != "" {
 					os.Remove(filepath.Join(h.config.Archive.DataDir, sub.RelPath))
+				}
+			}
+
+			audioTracks, _ := h.store.GetAudioTracks(ctx, video.ID)
+			for _, track := range audioTracks {
+				if track.RelPath != "" {
+					os.Remove(filepath.Join(h.config.Archive.DataDir, track.RelPath))
 				}
 			}
 

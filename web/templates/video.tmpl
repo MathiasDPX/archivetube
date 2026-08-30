@@ -16,6 +16,16 @@
             <track kind="subtitles" src="/data/{{webPath .RelPath}}" srclang="{{.LanguageCode}}" label="{{if .LanguageName}}{{.LanguageName}}{{else}}{{.LanguageCode}}{{end}}">
             {{end}}
         </video>
+        {{if gt (len .AudioTracks) 1}}
+        <div class="audio-track-selector">
+            <label for="audio-track-select">Audio:</label>
+            <select id="audio-track-select" class="form-select">
+                {{range .AudioTracks}}
+                <option value="{{if .RelPath}}/data/{{webPath .RelPath}}{{else}}original{{end}}" {{if .IsOriginal}}selected{{end}}>{{if .LanguageName}}{{.LanguageName}}{{else}}{{.LanguageCode}}{{end}}{{if .IsOriginal}} (original){{end}}</option>
+                {{end}}
+            </select>
+        </div>
+        {{end}}
     </div>
 
     <div class="watch-below{{if .Playlist}} has-upnext{{end}}">

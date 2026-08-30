@@ -19,10 +19,100 @@ window.addEventListener("beforeunload", function() {
 document.addEventListener('DOMContentLoaded', function () {
     var video = document.querySelector('video');
     if (!video) return;
-    
 
     const videoId = video.dataset.videoId;
     const channelId = video.dataset.channelId;
+
+    // --- Audio track switching ---
+    var audioSelect = document.getElementById('audio-track-select');
+    var externalAudio = null;   // hidden <audio> element for non-original tracks
+    var currentAudioUrl = null;
+
+    function syncAudio() {
+        if (!externalAudio) return;
+        // Keep external audio in sync with the video
+        if (Math.abs(externalAudio.currentTime - video.currentTime) > 0.3) {
+            externalAudio.currentTime = video.currentTime;
+        }
+        if (video.paused) {
+            externalAudio.pause();
+        } else {
+            externalAudio.play().catch(function () {});
+        }
+    }
+
+    function switchAudioTrack(url) {
+        if (url === 'original' || !url) {
+            // Restore the video's native audio
+            video.muted = false;
+            if (externalAudio) {
+                externalAudio.pause();
+                externalAudio.src = '';
+                externalAudio = null;
+                currentAudioUrl = null;
+            }
+            return;
+        }
+
+        if (currentAudioUrl === url) return;
+        currentAudioUrl = url;
+
+        // Mute the video and play the external audio file
+        video.muted = true;
+
+        if (externalAudio) {
+            externalAudio.pause();
+        }
+        externalAudio = new Audio(url);
+        externalAudio.currentTime = video.currentTime;
+        externalAudio.volume = video.volume;
+        if (!video.paused) {
+            externalAudio.play().catch(function () {});
+        }
+
+        // Sync events
+        externalAudio.addEventListener('play', function () {
+            syncAudio();
+        });
+    }
+
+    if (audioSelect) {
+        audioSelect.addEventListener('change', function () {
+            switchAudioTrack(this.value);
+        });
+
+        // Keep external audio synced with video playback events
+        video.addEventListener('play', function () {
+            if (externalAudio) {
+                externalAudio.play().catch(function () {});
+            }
+        });
+        video.addEventListener('pause', function () {
+            if (externalAudio) {
+                externalAudio.pause();
+            }
+        });
+        video.addEventListener('seeked', function () {
+            if (externalAudio) {
+                externalAudio.currentTime = video.currentTime;
+            }
+        });
+        video.addEventListener('timeupdate', function () {
+            if (externalAudio && Math.abs(externalAudio.currentTime - video.currentTime) > 0.5) {
+                externalAudio.currentTime = video.currentTime;
+            }
+        });
+        video.addEventListener('volumechange', function () {
+            if (externalAudio) {
+                externalAudio.volume = video.volume;
+            }
+        });
+        video.addEventListener('ratechange', function () {
+            if (externalAudio) {
+                externalAudio.playbackRate = video.playbackRate;
+            }
+        });
+    }
 
     let params = new URLSearchParams(document.location.search);
     var chapters = Array.from(document.querySelectorAll('.chapter-item'));
