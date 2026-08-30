@@ -9,7 +9,35 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"golang.org/x/text/language"
+	"golang.org/x/text/language/display"
 )
+
+func langName(code string) string {
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return code
+	}
+	tag, err := language.Parse(code)
+	if err != nil {
+		return titleCase(code)
+	}
+	name := display.Self.Name(tag)
+	if name == "" {
+		return titleCase(code)
+	}
+	return name
+}
+
+func titleCase(s string) string {
+	if s == "" {
+		return s
+	}
+	r := []rune(s)
+	r[0] = []rune(strings.ToUpper(string(r[0])))[0]
+	return string(r)
+}
 
 var funcMap = template.FuncMap{
 	"fmtDuration": fmtDuration,
@@ -24,6 +52,7 @@ var funcMap = template.FuncMap{
 	"linkify":     linkify,
 	"ogDesc":      ogDesc,
 	"webPath":     webPath,
+	"langName":    langName,
 	"currentURL":  func() string { return "" },
 	"gitSHA":      func() string { return "dev" },
 	"loggedIn":    func() bool { return false },

@@ -12,10 +12,10 @@
 {{define "content"}}
 <div class="watch-page">
     <div class="player-wrap">
-        <video id="video-player" class="video-js vjs-big-play-centered vjs-fluid" controls preload="metadata" data-channel-id="{{.Channel.YoutubeChannelID}}" data-video-id="{{.Video.YoutubeVideoID}}" data-audio-tracks='{{if gt (len .AudioTracks) 1}}[{{range $i, $t := .AudioTracks}}{{if $i}},{{end}}{"url":"{{if $t.RelPath}}/data/{{webPath $t.RelPath}}{{else}}original{{end}}","label":"{{if $t.LanguageName}}{{$t.LanguageName}}{{else}}{{$t.LanguageCode}}{{end}}{{if $t.IsOriginal}} (original){{end}}","isOriginal":{{$t.IsOriginal}},"lang":"{{$t.LanguageCode}}"}{{end}}]{{end}}' poster="/data/media/channels/{{.Channel.YoutubeChannelID}}/{{.Video.YoutubeVideoID}}/video.webp">
+        <video id="video-player" class="video-js vjs-big-play-centered vjs-fluid" controls preload="metadata" data-channel-id="{{.Channel.YoutubeChannelID}}" data-video-id="{{.Video.YoutubeVideoID}}" data-audio-tracks='{{if gt (len .AudioTracks) 1}}[{{range $i, $t := .AudioTracks}}{{if $i}},{{end}}{"url":"{{if $t.RelPath}}/data/{{webPath $t.RelPath}}{{else}}original{{end}}","label":"{{langName $t.LanguageCode}}{{if and $t.IsOriginal (ne $t.LanguageCode "original")}} (original){{end}}","isOriginal":{{$t.IsOriginal}},"lang":"{{$t.LanguageCode}}"}{{end}}]{{end}}' poster="/data/media/channels/{{.Channel.YoutubeChannelID}}/{{.Video.YoutubeVideoID}}/video.webp">
             <source src="/data/{{webPath .Video.VideoRelPath}}" type="video/mp4">
             {{range .Subtitles}}
-            <track kind="subtitles" src="/data/{{webPath .RelPath}}" srclang="{{.LanguageCode}}" label="{{if .LanguageName}}{{.LanguageName}}{{else}}{{.LanguageCode}}{{end}}">
+            <track kind="subtitles" src="/data/{{webPath .RelPath}}" srclang="{{.LanguageCode}}" label="{{langName .LanguageCode}}">
             {{end}}
         </video>
     </div>
