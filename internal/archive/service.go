@@ -28,22 +28,24 @@ import (
 var tracer = otel.Tracer("github.com/MathiasDPX/archivetube/internal/archive")
 
 type Service struct {
-	YtDlpPath      string
-	DataDir        string
-	Proxy          string
-	AudioLanguages []string
-	Store          *store.Store
-	SmartSearch    *config.SmartSearchConfig
+	YtDlpPath         string
+	DataDir           string
+	Proxy             string
+	AudioLanguages    []string
+	SubtitleLanguages []string
+	Store             *store.Store
+	SmartSearch       *config.SmartSearchConfig
 }
 
-func New(ytdlpPath, dataDir, proxy string, audioLanguages []string, st *store.Store, ss *config.SmartSearchConfig) *Service {
+func New(ytdlpPath, dataDir, proxy string, audioLanguages, subtitleLanguages []string, st *store.Store, ss *config.SmartSearchConfig) *Service {
 	return &Service{
-		YtDlpPath:      ytdlpPath,
-		DataDir:        dataDir,
-		Proxy:          proxy,
-		AudioLanguages: audioLanguages,
-		Store:          st,
-		SmartSearch:    ss,
+		YtDlpPath:         ytdlpPath,
+		DataDir:           dataDir,
+		Proxy:             proxy,
+		AudioLanguages:    audioLanguages,
+		SubtitleLanguages: subtitleLanguages,
+		Store:             st,
+		SmartSearch:       ss,
 	}
 }
 
@@ -140,6 +142,23 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string, pl
 
 	// build yt-dlp command
 	outputTemplate := filepath.Join(tmpDir, "video.%(ext)s")
+	// Build the subtitle language filter.
+	// If SubtitleLanguages is empty, download all available subtitles.
+	// If set, only download subtitles matching those languages.
+	subLangs := "all"
+	if len(s.SubtitleLanguages) > 0 {
+		trimmed := make([]string, 0, len(s.SubtitleLanguages))
+		for _, lang := range s.SubtitleLanguages {
+			l := strings.TrimSpace(lang)
+			if l != "" {
+				trimmed = append(trimmed, l)
+			}
+		}
+		if len(trimmed) > 0 {
+			subLangs = strings.Join(trimmed, ",")
+		}
+	}
+
 	args := []string{
 		"-o", outputTemplate,
 		"--write-info-json",
@@ -147,7 +166,7 @@ func (s *Service) ArchiveURL(ctx context.Context, url string, quality string, pl
 		"--write-subs",
 		"--no-write-auto-subs",
 		"--sub-format", "vtt/best",
-		"--sub-langs", "all",
+		"--sub-langs", subLangs,
 		"--no-write-comments",
 		"-f", qualityToFormat(quality),
 		"--merge-output-format", "mp4",

@@ -47,10 +47,11 @@ type ServerConfig struct {
 }
 
 type ArchiveConfig struct {
-	YtDlpPath      string   `toml:"ytdlp_path"`
-	DataDir        string   `toml:"data_dir"`
-	Proxy          string   `toml:"proxy"`
-	AudioLanguages []string `toml:"audio_languages"`
+	YtDlpPath         string   `toml:"ytdlp_path"`
+	DataDir           string   `toml:"data_dir"`
+	Proxy             string   `toml:"proxy"`
+	AudioLanguages    []string `toml:"audio_languages"`
+	SubtitleLanguages []string `toml:"subtitle_languages"`
 }
 
 type AuthConfig struct {
