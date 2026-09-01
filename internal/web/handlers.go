@@ -48,6 +48,9 @@ type VideoData struct {
 	AudioTracks []domain.AudioTrack
 	Playlist    *domain.Playlist
 	UpNext      []domain.Video
+	SponsorBlock bool
+	SBSponsorMode   string
+	SBPromotionMode string
 }
 
 type ArchiveData struct {
@@ -203,13 +206,16 @@ func (h *handlers) handleVideo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.renderWithRequest(w, r, "video.tmpl", VideoData{
-		Video:       video,
-		Channel:     channel,
-		Chapters:    chapters,
-		Subtitles:   subtitles,
-		AudioTracks: audioTracks,
-		Playlist:    playlist,
-		UpNext:      upNext,
+		Video:           video,
+		Channel:         channel,
+		Chapters:        chapters,
+		Subtitles:       subtitles,
+		AudioTracks:     audioTracks,
+		Playlist:        playlist,
+		UpNext:          upNext,
+		SponsorBlock:    h.config.SponsorBlock.Enabled,
+		SBSponsorMode:   string(h.config.SponsorBlock.SponsorSegments),
+		SBPromotionMode: string(h.config.SponsorBlock.PromotionSegments),
 	})
 }
 

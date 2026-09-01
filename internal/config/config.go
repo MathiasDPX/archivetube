@@ -77,6 +77,25 @@ type SmartSearchConfig struct {
 	Model   string `toml:"model"`
 }
 
+type SegmentMode string
+
+const (
+	SegmentModeHide SegmentMode = "hide"
+	SegmentModeShow SegmentMode = "show"
+	SegmentModeSkip SegmentMode = "skip"
+)
+
+type SponsorBlockConfig struct {
+	Enabled          bool        `toml:"enable"`
+	ApiURL           string      `toml:"api"`
+	SponsorSegments  SegmentMode `toml:"sponsor_segments"`
+	PromotionSegments SegmentMode `toml:"promotion_segments"`
+}
+
+func (s SponsorBlockConfig) HasSegments() bool {
+	return s.Enabled && (s.SponsorSegments != SegmentModeHide || s.PromotionSegments != SegmentModeHide)
+}
+
 type ObservabilityConfig struct {
 	EnablePrometheus bool   `toml:"prometheus"`
 	OTelExporter     string `toml:"otel_exporter_otlp_endpoint"`
@@ -89,6 +108,7 @@ type Config struct {
 	Observability ObservabilityConfig         `toml:"observability"`
 	SmartSearch   SmartSearchConfig           `toml:"smart_search"`
 	Dearrow       DearrowConfig               `toml:"dearrow"`
+	SponsorBlock  SponsorBlockConfig          `toml:"sponsorblock"`
 	API           map[string]*APIClientConfig `toml:"api"`
 }
 
@@ -114,6 +134,12 @@ func Load(path string) *Config {
 			Enabled:     false,
 			ApiURL:      "https://sponsor.ajay.app",
 			ThumbApiURL: "https://dearrow-thumb.ajay.app",
+		},
+		SponsorBlock: SponsorBlockConfig{
+			Enabled:           false,
+			ApiURL:            "https://sponsor.ajay.app/",
+			SponsorSegments:   SegmentModeSkip,
+			PromotionSegments: SegmentModeShow,
 		},
 	}
 

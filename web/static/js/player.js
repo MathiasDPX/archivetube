@@ -138,6 +138,118 @@ document.addEventListener('DOMContentLoaded', function () {
     let params = new URLSearchParams(document.location.search);
     var chapters = Array.from(document.querySelectorAll('.chapter-item'));
 
+    // --- SponsorBlock segments on the seekbar + auto skip ---
+    var sponsorBlockEnabled = videoEl.dataset.sponsorblock === '1';
+    var sbModes = {
+        sponsor: videoEl.dataset.sbSponsor || 'skip',
+        selfpromo: videoEl.dataset.sbPromotion || 'show'
+    };
+    var sbCategories = [];
+    if (sbModes.sponsor !== 'hide') sbCategories.push('sponsor');
+    if (sbModes.selfpromo !== 'hide') sbCategories.push('selfpromo');
+
+    if (sponsorBlockEnabled && sbCategories.length > 0) {
+        var sbSegments = [];
+        var Component = videojs.getComponent('Component');
+
+        class SBSegmentZone extends Component {
+            constructor(p, options) {
+                super(p, options);
+                this.segment = options.segment;
+                p.on('loadedmetadata', () => this.update());
+                p.on('durationchange', () => this.update());
+            }
+            createEl() {
+                const seg = this.options_.segment;
+                const el = videojs.dom.createEl('div', { className: 'vjs-sb-zone vjs-sb-' + seg.category });
+                const tooltipText = seg.category === 'sponsor' ? 'Sponsor' : 'Promotion';
+                const tooltip = videojs.dom.createEl('div', { className: 'vjs-sb-tooltip', textContent: tooltipText });
+                el.appendChild(tooltip);
+                el.addEventListener('click', () => {
+                    this.player().currentTime(this.options_.segment.segment[0]);
+                    this.player().play();
+                });
+                return el;
+            }
+            update() {
+                const duration = this.player().duration();
+                if (!isFinite(duration) || !this.segment.segment || this.segment.segment.length < 2) return;
+                const start = this.segment.segment[0];
+                const end = this.segment.segment[1];
+                if (end <= start) return;
+                this.el_.style.left = (start / duration) * 100 + '%';
+                this.el_.style.width = ((end - start) / duration) * 100 + '%';
+            }
+        }
+        videojs.registerComponent('SBSegmentZone', SBSegmentZone);
+
+        function formatSBSegments(s) {
+            return s.map(function (seg) {
+                return {
+                    segment: seg.segment,
+                    category: seg.category
+                };
+            });
+        }
+
+        function addSegments(segments) {
+            segments.forEach(function (seg) {
+                if (!seg.segment || seg.segment.length < 2) return;
+                sbSegments.push(seg);
+                player.ready(function () {
+                    var seekBar = player.controlBar.progressControl.seekBar;
+                    if (!seekBar) return;
+                    var zone = new SBSegmentZone(player, { segment: seg });
+                    seekBar.addChild(zone);
+                    seekBar.el().appendChild(zone.el());
+                    zone.update();
+                });
+            });
+        }
+
+        function setupAutoSkip() {
+            var skipMap = {};
+            sbSegments.forEach(function (seg) {
+                if (sbModes[seg.category] === 'skip') {
+                    skipMap[seg.category] = seg;
+                }
+            });
+            if (Object.keys(skipMap).length === 0) return;
+
+            var lastSkip = 0;
+            player.on('timeupdate', function () {
+                var t = player.currentTime();
+                if (t < lastSkip) return; // only skip when playing forward
+                sbSegments.forEach(function (seg) {
+                    if (sbModes[seg.category] !== 'skip') return;
+                    var start = seg.segment[0];
+                    var end = seg.segment[1];
+                    if (end - start < 0.5) return;
+                    if (t >= start && t < end) {
+                        lastSkip = end;
+                        player.currentTime(end);
+                    }
+                });
+            });
+        }
+
+        player.ready(function () {
+            fetch('/api/sponsorblock/segments/' + encodeURIComponent(videoId), {
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(function (resp) {
+                return resp.json().catch(function () { return []; });
+            })
+            .then(function (data) {
+                if (!Array.isArray(data) || data.length === 0) return;
+                var segs = formatSBSegments(data);
+                addSegments(segs);
+                setupAutoSkip();
+            })
+            .catch(function () {});
+        });
+    }
+
     chapters.forEach(function (item) {
         item.addEventListener('click', function () {
             player.currentTime(parseFloat(this.dataset.time));

@@ -870,6 +870,48 @@ footer a {
     color: var(--text);
 }
 
+.vjs-sb-zone {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    z-index: 1;
+    cursor: pointer;
+    box-sizing: border-box;
+    background: rgba(0, 212, 0, 0.6);
+}
+
+.vjs-sb-zone.vjs-sb-selfpromo {
+    background: rgba(0, 184, 255, 0.55);
+}
+
+.vjs-sb-zone:hover {
+    background: rgba(0, 212, 0, 0.85);
+}
+
+.vjs-sb-zone.vjs-sb-selfpromo:hover {
+    background: rgba(0, 184, 255, 0.8);
+}
+
+.vjs-sb-zone .vjs-sb-tooltip {
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #000;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+
+.vjs-sb-zone:hover .vjs-sb-tooltip {
+    opacity: 1;
+}
+
 .queue-section {
     margin-top: 36px;
 }

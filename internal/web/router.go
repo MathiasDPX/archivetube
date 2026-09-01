@@ -71,6 +71,7 @@ func NewRouter(cfg *config.Config, st *store.Store, archiveSvc *archive.Service,
 	mux.HandleFunc("POST /api/queue/clear", h.requireAuth(h.handleQueueClear))
 	mux.HandleFunc("GET /api/playlist", h.requireAuthAPI(h.handlePlaylistFetch, config.PermArchive))
 	mux.HandleFunc("POST /api/archive/batch", h.requireAuthAPI(h.handleArchiveBatch, config.PermArchive))
+	mux.HandleFunc("GET /api/sponsorblock/segments/{id}", h.handleSponsorBlockSegments)
 	mux.HandleFunc("GET /openapi.yml", h.handleOpenAPI)
 
 	// metrics
