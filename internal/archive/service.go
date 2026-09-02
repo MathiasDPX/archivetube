@@ -758,31 +758,52 @@ func (s *Service) FetchPlaylistEntries(ctx context.Context, url string) ([]Playl
 	return entries, nil
 }
 
-// isAIGenerated checks whether an audio format is AI-dubbed based on format metadata.
-// YouTube labels auto-dubbed tracks with "auto" in the format note or audio track name.
+// isAIGenerated checks whether an audio format is an AI-dubbed track.
+// YouTube labels auto-dubbed tracks with "- dubbed-auto" in the format note or
+// "auto" in the audio track name; translated/TTS dubs may carry other markers.
 func isAIGenerated(f FormatInfo) bool {
 	note := strings.ToLower(f.FormatNote)
-	if strings.Contains(note, "auto") {
-		return true
-	}
+	name := ""
 	if f.AudioTrack != nil {
-		name := strings.ToLower(f.AudioTrack.Name)
-		if strings.Contains(name, "auto") {
+		name = strings.ToLower(f.AudioTrack.Name)
+	}
+	hay := note + " " + name
+	for _, marker := range []string{"dubbed", "tts", "aloud", "auto"} {
+		if strings.Contains(hay, marker) {
 			return true
 		}
 	}
 	return false
 }
 
-// findBestAudioFormats returns the highest-bitrate audio-only format for each language.
+// findBestAudioFormats returns the highest-bitrate audio-only format for each
+// language, excluding languages that have any AI-dubbed track.
+//
+// YouTube exposes the same AI-dubbed audio in two ways: formats explicitly
+// labelled "- dubbed-auto" (e.g. itag 233/234) and identical tracks re-exposed
+// under other itags (139/140/249/250/251) without the marker. To avoid ever
+// archiving an AI voice, if ANY audio format of a language is AI-marked then the
+// whole language is excluded.
 func findBestAudioFormats(formats []FormatInfo) map[string]FormatInfo {
+	aiLangs := make(map[string]bool)
+	for _, f := range formats {
+		if f.Vcodec != "none" {
+			continue
+		}
+		if isAIGenerated(f) {
+			if lang := strings.TrimSpace(f.Language); lang != "" {
+				aiLangs[lang] = true
+			}
+		}
+	}
+
 	result := make(map[string]FormatInfo)
 	for _, f := range formats {
 		if f.Vcodec != "none" {
 			continue
 		}
 		lang := strings.TrimSpace(f.Language)
-		if lang == "" {
+		if lang == "" || aiLangs[lang] {
 			continue
 		}
 		existing, ok := result[lang]
@@ -791,6 +812,12 @@ func findBestAudioFormats(formats []FormatInfo) map[string]FormatInfo {
 		}
 	}
 	return result
+}
+
+// baseLanguage normalizes a language code/name to its base language part,
+// e.g. "fr-FR" -> "fr", "en-US" -> "en".
+func baseLanguage(code string) string {
+	return strings.ToLower(strings.TrimSpace(strings.SplitN(code, "-", 2)[0]))
 }
 
 // findOriginalAudioFormat returns the format info for the original/default audio track.
@@ -837,29 +864,29 @@ func (s *Service) downloadAudioTracks(ctx context.Context, info *InfoJSON, final
 		IsOriginal:   true,
 	})
 
-	// Find available audio-only formats grouped by language.
+	// Find available audio-only formats grouped by language (AI-dubbed excluded).
 	audioFormats := findBestAudioFormats(info.Formats)
 
-	// Build the set of desired languages.
+	// Build the set of desired base languages.
 	// If AudioLanguages is empty, download all non-AI tracks.
-	// If set, only download tracks matching those languages.
+	// If set, only download tracks whose base language matches.
 	desiredLangs := make(map[string]bool)
 	if len(s.AudioLanguages) == 0 {
 		for lang := range audioFormats {
-			desiredLangs[lang] = true
+			desiredLangs[baseLanguage(lang)] = true
 		}
 	} else {
 		for _, lang := range s.AudioLanguages {
-			desiredLangs[strings.ToLower(strings.TrimSpace(lang))] = true
+			desiredLangs[baseLanguage(lang)] = true
 		}
 	}
 
 	for lang, fmtInfo := range audioFormats {
 		// Skip the original language — it's already in the video file.
-		if lang == origLang {
+		if baseLanguage(lang) == baseLanguage(origLang) {
 			continue
 		}
-		if !desiredLangs[lang] {
+		if !desiredLangs[baseLanguage(lang)] {
 			continue
 		}
 		if isAIGenerated(fmtInfo) {
